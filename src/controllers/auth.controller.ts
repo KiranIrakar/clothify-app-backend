@@ -1,0 +1,44 @@
+import { FastifyReply, FastifyRequest } from "fastify";
+import { AuthService } from "../services/auth.service";
+
+export class AuthController {
+  private authService = new AuthService();
+
+  signup = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { email, name, password, phone }: any = req.body;
+
+    const result = await this.authService.signup({
+      email,
+      name,
+      password,
+      phone
+    });
+
+    reply.send(result);
+  };
+
+  verifyOtp = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { email, otp }: any = req.body;
+
+    const result = await this.authService.verifyOtp(email, otp);
+    reply.send(result);
+  };
+
+  resendOtp = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { email }: any = req.body;
+
+    const result = await this.authService.resendOtp(email);
+    reply.send(result);
+  };
+
+  resetPassword = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { email, newPassword }: any = req.body;
+
+    const result = await this.authService.resetPassword({
+      email,
+      newPassword
+    });
+
+    reply.send(result);
+  };
+}

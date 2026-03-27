@@ -2,21 +2,21 @@ import { FastifyInstance } from "fastify";
 import { AuthController } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 
-export default async function authRoutes(app: FastifyInstance) {
+export default async function authRoutes(fastify: FastifyInstance) {
 
   const authController = new AuthController(); 
 
-  app.post(
+  fastify.post(
     "/signup",
     { preHandler: [authMiddleware] }, 
     authController.signup
   );
 
-  app.post("/verify-otp", authController.verifyOtp);
+  fastify.post("/verify-otp", authController.verifyOtp);
 
-  app.post("/resend-otp", authController.resendOtp);
+  fastify.post("/resend-otp", authController.resendOtp);
 
-  app.post("/reset-password", authController.resetPassword);
+  fastify.post("/reset-password", authController.resetPassword);
 
-  app.post("/generate-otp", authController.generateOtp);
+  fastify.post("/generate-otp", authController.generateOtp);
 }

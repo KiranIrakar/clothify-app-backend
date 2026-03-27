@@ -7,53 +7,44 @@ import bcrypt from "bcrypt";
 
 export class AuthService {
 
-  async signup(data: any) {
-    const { email, name, password, phone } = data;
+ async signup(data: any) {
+  const { email, name, password, phone } = data;
 
-    if (!email || !password || !name) {
-      throw new Error("Email, Name and Password are required");
-    }
-
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      throw new Error("User already exists");
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const otp = generateOTP();
-    const expiry = Date.now() + 5 * 60 * 1000;
-
-    const user = await User.create({
-      email,
-      name,
-      password: hashedPassword,
-      phone,
-      otp,
-      otp_expiry: expiry
-    });
-
-    await sendEmail(email, otp);
-
-    if (phone) {
-      await sendSMS(phone, otp);
-    }
-
-    const token = generateToken({
-      id: user.getDataValue("id"),
-      email: user.getDataValue("email")
-    });
-
-    return {
-      message: `User registered successfully. OTP sent to ${email}`,
-      token,
-      user: {
-        id: user.getDataValue("id"),
-        email: user.getDataValue("email"),
-        name: user.getDataValue("name")
-      }
-    };
+  if (!email || !password || !name) {
+    throw new Error("Email, Name and Password are required");
   }
+
+  const existingUser = await User.findOne({ where: { email } });
+  if (existingUser) {
+    throw new Error("User already exists");
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+ 
+  const user = await User.create({
+    email,
+    name,
+    password: hashedPassword,
+    phone
+  });
+
+
+  const token = generateToken({
+    id: user.getDataValue("id"),
+    email: user.getDataValue("email")
+  });
+
+  return {
+    message: `User registered successfully`,
+    token,
+    user: {
+      id: user.getDataValue("id"),
+      email: user.getDataValue("email"),
+      name: user.getDataValue("name")
+    }
+  };
+}
 
   async verifyOtp(email: string, otp: string) {
     const user = await User.findOne({ where: { email } });
@@ -134,4 +125,46 @@ export class AuthService {
       message: "Password reset successful"
     };
   }
+
+
+async generateOtp(data: any) {
+  const { email, phone } = data;
+
+  if (!email && !phone) {
+    throw new Error("Email or phone required");
+  }
+
+  const otp = generateOTP();
+  const expiry = Date.now() + 5 * 60 * 1000;
+
+
+  let user = await User.findOne({ where: { email } });
+
+  if (user) {
+    await user.update({
+      otp,
+      otp_expiry: expiry
+    });
+  } else {
+    user = await User.create({
+      email,
+      phone,
+      otp,
+      otp_expiry: expiry
+    });
+  }
+
+
+  if (email) {
+    await sendEmail(email, otp);
+  }
+
+  if (phone) {
+    await sendSMS(phone, otp);
+  }
+
+  return {
+    message: "OTP generated and sent successfully"
+  };
+}
 }

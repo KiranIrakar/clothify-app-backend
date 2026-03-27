@@ -41,4 +41,15 @@ export class AuthController {
 
     reply.send(result);
   };
+
+  generateOtp = async (req: FastifyRequest, reply: FastifyReply) => {
+  const { email, phone }: any = req.body;
+
+  const result = await this.authService.generateOtp({
+    email,
+    phone
+  });
+
+  reply.send(result);
+};
 }

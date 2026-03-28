@@ -19,6 +19,7 @@
     "start": "ts-node server.ts"
   },
   "dependencies": {
+    "@fastify/cors": "^10.1.0",
     "@fastify/mysql": "^5.0.2",
     "@types/jsonwebtoken": "^9.0.10",
     "bcrypt": "^6.0.0",

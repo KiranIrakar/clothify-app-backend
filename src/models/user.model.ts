@@ -40,6 +40,7 @@ UserModel.init(
         phone: {
             type: DataTypes.STRING,
             allowNull: true,
+            unique: true,
         },
         role: {
             type: DataTypes.ENUM("ROLE_USER", "ROLE_ADMIN"),

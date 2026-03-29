@@ -30,14 +30,9 @@ export class AuthService {
   });
 
 
-  const token = generateToken({
-    id: user.getDataValue("id"),
-    email: user.getDataValue("email")
-  });
 
   return {
     message: `User registered successfully`,
-    token,
     user: {
       id: user.getDataValue("id"),
       email: user.getDataValue("email"),

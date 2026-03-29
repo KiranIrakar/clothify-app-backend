@@ -1,5 +1,5 @@
 import { DataTypes, Model } from "sequelize";
-import { sequelize } from "../config/db";
+import sequelize from "../config/db";
 
 class UserModel extends Model {
     id: any;
@@ -44,7 +44,6 @@ UserModel.init(
         role: {
             type: DataTypes.ENUM("ROLE_USER", "ROLE_ADMIN"),
             defaultValue: "ROLE_USER",
-            allowNull: true,
         },
         enabled: {
             type: DataTypes.BOOLEAN,

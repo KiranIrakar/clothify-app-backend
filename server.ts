@@ -9,12 +9,15 @@ const start = async () => {
     // console.log("DB PASS:", process.env.DB_PASSWORD);
 
     // DB connect
-    await sequelize.sync({ alter: true });
+    await sequelize.sync();
     console.log(" Database connected");
 
     // Server start
-    await app.listen({ port: Number(process.env.PORT) || 3000 });
-    console.log("🚀 Server running on port", process.env.PORT || 3000);
+await app.listen({
+  port: Number(process.env.PORT) || 3000, 
+  host: "0.0.0.0", 
+});    
+console.log("🚀 Server running on port", process.env.PORT || 3000);
 
   } catch (err) {
     console.error("❌ Error starting server:", err);

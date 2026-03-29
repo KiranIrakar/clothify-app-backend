@@ -2,15 +2,14 @@ import dotenv from "dotenv";
 dotenv.config(); //  MUST BE FIRST
 
 import { app } from "./app";
-import { sequelize } from "./src/config/db";
-
+import sequelize from "./src/config/db";
 const start = async () => {
   try {
     // console.log("DB USER:", process.env.DB_USER);
     // console.log("DB PASS:", process.env.DB_PASSWORD);
 
     // DB connect
-    await sequelize.sync();
+    await sequelize.sync({ alter: true });
     console.log(" Database connected");
 
     // Server start

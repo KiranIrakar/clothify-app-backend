@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 import fastifyCors from "@fastify/cors";
 import authRoutes from "./src/routes/auth.route";
 import productRoutes from "./src/routes/product.route";
-import { sequelize } from "./src/config/db";
+import sequelize from "./src/config/db"; 
 dotenv.config();
 
 export const app = Fastify();

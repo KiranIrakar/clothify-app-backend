@@ -11,7 +11,7 @@ export async function sendEmail(to: string, otp: string) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "api-key": process.env.BREVO_API_KEY,
+        "api-key": process.env.BREVO_API_KEY!,
       },
       body: JSON.stringify({
         sender: {
@@ -19,19 +19,15 @@ export async function sendEmail(to: string, otp: string) {
           name: "Clothify 👕",
         },
         to: [{ email: to }],
-        subject: "Clothify OTP Verification",
-        htmlContent: `
-          <div style="font-family: Arial; padding:20px; text-align:center;">
-            <h2>Clothify 👕</h2>
-            <p>Your OTP is:</p>
-            <h1>${otp}</h1>
-            <p>Valid for 5 minutes</p>
-          </div>
-        `,
+        subject: "OTP",
+        htmlContent: `<h1>${otp}</h1>`,
       }),
     });
 
     const data = await response.json();
+
+    console.log("BREVO RESPONSE:", data); // 👈 ADD THIS
+
 
     if (!response.ok) {
       console.error("Brevo error:", data);

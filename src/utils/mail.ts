@@ -1,68 +1,76 @@
-import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
+
+import Brevo from "@getbrevo/brevo";
 
 export async function sendEmail(to: string, otp: string) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+  try {
+    if (!process.env.BREVO_API_KEY) {
+      throw new Error("BREVO_API_KEY missing");
     }
-  });
 
-  await transporter.sendMail({
-    from: `"Clothify 👕" <${process.env.EMAIL_USER}>`,
-    to,
-    subject: "Clothify OTP Verification",
-    html: `
-      <div style="background:#f9fafc; padding:40px 0; font-family: Arial, sans-serif;">
-        
-        <div style="max-width:420px; margin:auto; background:#ffffff; border-radius:10px; padding:30px; text-align:center;">
+    const apiInstance = new Brevo.TransactionalEmailsApi();
+
+    // ✅ Set API key
+    apiInstance.setApiKey("api-key", process.env.BREVO_API_KEY);
+
+    const response = await apiInstance.sendTransacEmail({
+      sender: {
+        email: process.env.EMAIL_FROM!,
+        name: "Clothify 👕",
+      },
+      to: [{ email: to }],
+      subject: "Clothify OTP Verification",
+
+      // ✨ Updated Template
+      htmlContent: `
+        <div style="font-family: Arial, sans-serif; background:#f4f6f8; padding:30px;">
           
-          <!-- Logo / Brand -->
-          <h1 style="margin:0; color:#4f46e5;">Clothify 👕</h1>
-          
-          <!-- Heading -->
-          <h3 style="margin-top:15px; color:#222;">Verify your login</h3>
+          <div style="max-width:400px; margin:auto; background:#ffffff; padding:25px; border-radius:8px; text-align:center;">
+            
+            <h2 style="color:#4f46e5; margin-bottom:10px;">Clothify 👕</h2>
+            
+            <p style="color:#333; font-size:16px;">
+              Your OTP for login is:
+            </p>
 
-          <!-- Message -->
-          <p style="font-size:14px; color:#555;">
-            Use the code below to securely sign in to your account.
-          </p>
-
-          <!-- OTP Button Style -->
-          <div style="margin:25px 0;">
             <div style="
-              display:inline-block;
-              background:#4f46e5;
-              color:#ffffff;
-              font-size:24px;
+              margin:20px 0;
+              font-size:26px;
               font-weight:bold;
-              letter-spacing:6px;
-              padding:12px 26px;
+              letter-spacing:5px;
+              color:#ffffff;
+              background:#4f46e5;
+              padding:10px 20px;
               border-radius:6px;
+              display:inline-block;
             ">
               ${otp}
             </div>
+
+            <p style="font-size:13px; color:#666;">
+              This OTP is valid for <b>5 minutes</b>.
+            </p>
+
+            <p style="font-size:12px; color:#999; margin-top:20px;">
+              Do not share this code with anyone.
+            </p>
+
           </div>
 
-          <!-- Expiry -->
-          <p style="font-size:13px; color:#777;">
-            Valid for <b>5 minutes</b> only
-          </p>
-
-          <!-- Security -->
-          <p style="font-size:12px; color:#999; margin-top:20px;">
-            For security reasons, never share your OTP.
+          <p style="text-align:center; font-size:12px; color:#aaa; margin-top:15px;">
+            © ${new Date().getFullYear()} Clothify
           </p>
 
         </div>
+      `,
+    });
 
-        <!-- Footer -->
-        <div style="text-align:center; margin-top:15px; font-size:12px; color:#aaa;">
-          © ${new Date().getFullYear()} Clothify
-        </div>
+    console.log("Email sent:", response);
+    return response;
 
-      </div>
-    `
-  });
+  } catch (error) {
+    console.error("Email error:", error);
+    throw error;
+  }
 }

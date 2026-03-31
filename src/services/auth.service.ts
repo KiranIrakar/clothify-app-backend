@@ -162,4 +162,42 @@ async generateOtp(data: any) {
     message: "OTP generated and sent successfully"
   };
 }
+
+async login(data: any) {
+  const { email, password } = data;
+
+  if (!email || !password) {
+    throw new Error("Email and Password are required");
+  }
+
+  const user = await User.findOne({ where: { email } });
+
+  if (!user) {
+    throw new Error("Invalid email or password");
+  }
+
+  const isMatch = await bcrypt.compare(
+    password,
+    user.getDataValue("password")
+  );
+
+  if (!isMatch) {
+    throw new Error("Invalid email or password");
+  }
+
+  const token = generateToken({
+    id: user.getDataValue("id"),
+    email: user.getDataValue("email")
+  });
+
+  return {
+    message: "Login successful",
+    token,
+    user: {
+      id: user.getDataValue("id"),
+      email: user.getDataValue("email"),
+      name: user.getDataValue("name")
+    }
+  };
+}
 }

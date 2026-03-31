@@ -11,4 +11,5 @@ export default async function authRoutes(fastify: FastifyInstance) {
   fastify.post("/resend-otp", authController.resendOtp);
   fastify.post("/reset-password", authController.resetPassword);
   fastify.post("/generate-otp", authController.generateOtp);
+  fastify.post("/login", authController.login);
 }

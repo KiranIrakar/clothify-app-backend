@@ -26,20 +26,20 @@ UserModel.init(
         },
         name: {
             type: DataTypes.STRING,
-            allowNull: true,
+            allowNull: false,
         },
         email: {
             type: DataTypes.STRING,
-            allowNull: true,
+            allowNull: false,
             unique: true,
         },
         password: {
             type: DataTypes.STRING,
-            allowNull: true,
+            allowNull: false,
         },
         phone: {
             type: DataTypes.STRING,
-            allowNull: true,
+            allowNull: false,
             unique: true,
         },
         role: {

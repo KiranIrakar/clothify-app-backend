@@ -70,6 +70,10 @@ UserModel.init(
             defaultValue: DataTypes.NOW,
             allowNull: true,
         },
+        temp_phone: {
+        type: DataTypes.STRING,
+        allowNull: true
+},
     },
     {
         sequelize,

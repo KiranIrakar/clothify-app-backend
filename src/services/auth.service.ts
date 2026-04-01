@@ -215,7 +215,7 @@ async changePhoneRequest(data: any) {
   const expiry = Date.now() + 5 * 60 * 1000;
 
   await user.update({
-    phone: newPhone,
+    temp_phone: newPhone,
     otp,
     otp_expiry: expiry
   });

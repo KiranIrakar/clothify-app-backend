@@ -26,6 +26,7 @@ Product.init(
     description: {
       type: DataTypes.STRING,
     },
+    
   },
   {
     sequelize,

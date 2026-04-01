@@ -59,7 +59,10 @@ UserModel.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
-
+  temp_phone: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
         created_at: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,

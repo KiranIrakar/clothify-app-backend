@@ -59,9 +59,9 @@ UserModel.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
-  temp_phone: {
+        temp_phone: {
             type: DataTypes.STRING,
-            allowNull: true,
+            allowNull: false,
         },
         created_at: {
             type: DataTypes.DATE,

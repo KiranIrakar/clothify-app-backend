@@ -200,4 +200,66 @@ async login(data: any) {
     }
   };
 }
+
+async changePhoneRequest(data: any) {
+  const { userId, newPhone } = data;
+ 
+  if (!newPhone) {
+    throw new Error("New phone number required");
+  }
+ 
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+ 
+  const otp = generateOTP();
+  const expiry = Date.now() + 5 * 60 * 1000;
+ 
+  await user.update({
+    temp_phone: newPhone,
+    otp,
+    otp_expiry: expiry
+  });
+ 
+  await sendSMS(newPhone, otp);
+ 
+  return {
+    message: "OTP sent to new phone number"
+  };
+}
+ 
+ 
+async verifyChangePhone(data: any) {
+  const { userId, otp } = data;
+ 
+  const user = await User.findByPk(userId);
+  if (!user) throw new Error("User not found");
+ 
+  if (user.getDataValue("otp") !== otp) {
+    throw new Error("Invalid OTP");
+  }
+ 
+  if (Date.now() > user.getDataValue("otp_expiry")) {
+    throw new Error("OTP expired");
+  }
+ 
+  const newPhone = user.getDataValue("temp_phone");
+ 
+  if (!newPhone) {
+    throw new Error("No phone change request found");
+  }
+ 
+  await user.update({
+    phone: newPhone,
+    temp_phone: null,
+    otp: null,
+    otp_expiry: null
+  });
+ 
+  return {
+    message: "Phone number updated successfully",
+    phone: newPhone
+  };
+}
+ 
+
 }

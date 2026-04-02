@@ -6,7 +6,10 @@
     "outDir": "./dist",
     "esModuleInterop": true,
     "strict": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+
+    "skipLibCheck": true,        
+    "resolveJsonModule": true
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules"]

@@ -49,3 +49,6 @@ Thumbs.db
 *.mov
 *.wmv
 
+# WhatsApp session (VERY IMPORTANT)
+.wwebjs_auth/
+.wwebjs_cache/

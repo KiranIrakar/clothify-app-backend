@@ -1,4 +1,4 @@
-import UserProfile from "../models/userProfile.model";
+import UserProfile from "../models/user-profile.model";
 import {
     UserProfileAttributes,
     UserProfileCreationAttributes,

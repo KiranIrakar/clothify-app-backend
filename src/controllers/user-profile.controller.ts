@@ -5,7 +5,7 @@ import {
 } from "../interface/user-profile.interface";
 
 class UserProfileController {
-  async create(
+  async createUser(
     req: FastifyRequest<{ Body: UserProfileCreationAttributes }>,
     reply: FastifyReply
   ) {
@@ -20,7 +20,7 @@ class UserProfileController {
     }
   }
 
-  async getAll(req: FastifyRequest, reply: FastifyReply) {
+  async getAllUsers(req: FastifyRequest, reply: FastifyReply) {
     try {
       const users = await userService.getAllUsers();
       reply.send({ success: true, data: users });
@@ -32,7 +32,7 @@ class UserProfileController {
     }
   }
 
-  async getById(
+  async getUserById(
     req: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
@@ -56,7 +56,7 @@ class UserProfileController {
     }
   }
 
-  async update(
+  async updateUser(
     req: FastifyRequest<{
       Params: { id: string };
       Body: UserProfileCreationAttributes;
@@ -83,7 +83,7 @@ class UserProfileController {
     }
   }
 
-  async delete(
+  async deleteUser(
     req: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {

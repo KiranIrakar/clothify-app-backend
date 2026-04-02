@@ -202,9 +202,9 @@ async login(data: any) {
 }
 
 async changePhoneRequest(data: any) {
-  const { userId, newPhone } = data;
+  const { userId, phone } = data;
  
-  if (!newPhone) {
+  if (!phone) {
     throw new Error("New phone number required");
   }
  
@@ -214,13 +214,18 @@ async changePhoneRequest(data: any) {
   const otp = generateOTP();
   const expiry = Date.now() + 5 * 60 * 1000;
  
-  await user.update({
-    temp_phone: newPhone,
-    otp,
-    otp_expiry: expiry
-  });
+  await User.update(
+    {
+      phone: phone,
+      otp,
+      otp_expiry: expiry
+    },
+    {
+      where: { id: userId }
+    }
+  );
  
-  await sendSMS(newPhone, otp);
+  await sendSMS(phone, otp);
  
   return {
     message: "OTP sent to new phone number"

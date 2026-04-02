@@ -64,19 +64,21 @@ export class AuthController {
     reply.send(result);
   };
 
-   changePhoneRequest = async (req: FastifyRequest, reply: FastifyReply) => {
+  changePhoneRequest = async (req: FastifyRequest, reply: FastifyReply) => {
    console.log("BODY:", req.body);  
-  const { newPhone }: any = req.body;
-  console.log("newPhone:", newPhone);
+  const { phone }: any = req.body;
+  console.log("newPhone:", phone);
   const userId = (req as any).user.id;
  
   const result = await this.authService.changePhoneRequest({
     userId,
-    newPhone
+    phone
   });
  
   reply. send(result);
-};
+}; 
+ 
+ 
  
 verifyChangePhone = async (req: FastifyRequest, reply: FastifyReply) => {
   const { otp }: any = req.body;

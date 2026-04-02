@@ -59,7 +59,7 @@ UserModel.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
-        temp_phone: {
+        temprory_phone: {
             type: DataTypes.STRING,
             allowNull: false,
         },

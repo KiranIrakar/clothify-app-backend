@@ -9,7 +9,7 @@ class UserModel extends Model {
     phone: any;
     role: any;
     enabled: any;
-
+    temprory_phone: any;
     otp: any;
     otp_expiry: any;
 
@@ -57,6 +57,10 @@ UserModel.init(
         },
         otp_expiry: {
             type: DataTypes.DATE,
+            allowNull: true,
+        },
+        temprory_phone:{
+            type: DataTypes.STRING,
             allowNull: true,
         },
         created_at: {

@@ -90,7 +90,7 @@ export class AuthService {
       otp_expiry: expiry
     });
 
-    await sendEmail(email, otp);
+    await sendEmail(email, otp, user.getDataValue("name"));
 
     return {
       message: `OTP resent successfully to ${email}`
@@ -151,7 +151,7 @@ async generateOtp(data: any) {
 
 
   if (email) {
-    await sendEmail(email, otp);
+    await sendEmail(email, otp, user.getDataValue("name"));
   }
 
   if (phone) {

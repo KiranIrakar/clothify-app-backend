@@ -10,6 +10,16 @@ class UserProfileService {
 
     async createUser(data: CreateUserRequest): Promise<UserProfileAttributes> {
 
+         const existingUser = await UserProfile.findOne({
+        where: {
+            email: data.email, 
+        }
+    });
+
+    if (existingUser) {
+        throw new Error("User already exists with this email");
+    }
+
         if (data.password !== data.confirmPassword) {
             throw new Error("Password and Confirm Password do not match");
         }

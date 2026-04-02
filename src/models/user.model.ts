@@ -59,10 +59,6 @@ UserModel.init(
             type: DataTypes.DATE,
             allowNull: true,
         },
-        temprory_phone: {
-            type: DataTypes.STRING,
-            allowNull: false,
-        },
         created_at: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,

@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "temporary_phone" varchar(15);

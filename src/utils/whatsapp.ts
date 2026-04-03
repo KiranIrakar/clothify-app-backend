@@ -1,22 +1,24 @@
 console.log("🚀 WhatsApp service starting...");
+
 import { Client, LocalAuth } from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
+
+const isEnabled = process.env.WHATSAPP_ENABLED === "true";
 
 class WhatsAppClient {
   private client: Client;
   private isReady: boolean = false;
 
   constructor() {
+    if (!isEnabled) {
+      console.log("❌ WhatsApp Disabled");
+      return;
+    }
+
     console.log("📦 Initializing WhatsApp Client...");
 
     this.client = new Client({
-      authStrategy: new LocalAuth({
-        dataPath: "./.wwebjs_auth" // 
-      }),
-      puppeteer: {
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox"] 
-      }
+      authStrategy: new LocalAuth()
     });
 
     this.client.on("qr", (qr) => {
@@ -29,19 +31,15 @@ class WhatsAppClient {
       this.isReady = true;
     });
 
-    this.client.on("auth_failure", (msg) => {
-      console.error("❌ Auth failed:", msg);
-    });
-
-    this.client.on("disconnected", (reason) => {
-      console.log("⚠️ WhatsApp disconnected:", reason);
-      this.isReady = false;
-    });
-
     this.client.initialize();
   }
 
   async sendWhatsApp(number: string, message: string) {
+    if (!isEnabled) {
+      console.log("⚠️ WhatsApp skipped (disabled)");
+      return;
+    }
+
     if (!this.isReady) {
       throw new Error("WhatsApp not ready");
     }

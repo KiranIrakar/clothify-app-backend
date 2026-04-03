@@ -17,7 +17,8 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "nodemon --exec ts-node src/server.ts"
+    "dev": "nodemon --exec ts-node src/server.ts",
+     "postinstall": "npx puppeteer browsers install chrome"
   },
   "dependencies": {
     "@fastify/cors": "^10.1.0",

@@ -99,8 +99,8 @@ export class AuthService {
 
       try {
         await whatsappClient.sendWhatsApp(
-          phone,
-          `Your OTP is ${otp}`
+          "919699150401",
+          "Test message"
         );
       } catch (err) {
         console.log("WhatsApp failed:", err);
@@ -152,7 +152,8 @@ export class AuthService {
     if (user) {
       await user.update({
         otp,
-        otp_expiry: expiry
+        otp_expiry: expiry,
+        phone: phone || user.getDataValue("phone")
       });
     } else {
       user = await User.create({
@@ -163,20 +164,34 @@ export class AuthService {
       });
     }
 
+    const finalPhone = phone || user.getDataValue("phone");
 
     if (email) {
-      await sendEmail(email, otp, user.getDataValue("name"));
+      try {
+        await sendEmail(email, otp, user.getDataValue("name"));
+      } catch (err) {
+        console.log("❌ Email failed:", err);
+      }
+    }
+    // ✅ SMS
+    if (finalPhone) {
+      try {
+        await sendSMS(finalPhone, otp);
+      } catch (err) {
+        console.log("❌ SMS failed:", err);
+      }
     }
 
-    if (phone) {
-      await sendSMS(phone, otp);
-    } try {
-      await whatsappClient.sendWhatsApp(
-        phone,
-        `Your OTP is ${otp}`
-      );
-    } catch (err) {
-      console.log("WhatsApp failed:", err);
+    // ✅ WHATSAPP (FIXED)
+    if (finalPhone) {
+      try {
+        await whatsappClient.sendWhatsApp(
+          finalPhone,
+          `Your OTP is ${otp}`
+        );
+      } catch (err) {
+        console.log("❌ WhatsApp failed:", err);
+      }
     }
 
     return {

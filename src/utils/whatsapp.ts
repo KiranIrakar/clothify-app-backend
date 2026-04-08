@@ -36,16 +36,37 @@ class WhatsAppClient {
 
   async sendWhatsApp(number: string, message: string) {
     if (!isEnabled) {
-      console.log("⚠️ WhatsApp skipped (disabled)");
+      console.log("⚠️ WhatsApp skipped");
       return;
     }
 
     if (!this.isReady) {
-      throw new Error("WhatsApp not ready");
+      console.log("❌ WhatsApp not ready yet");
+      return;
     }
 
-    const formatted = `${number}@c.us`;
-    return await this.client.sendMessage(formatted, message);
+    try {
+      let cleanNumber = number.replace(/\D/g, "");
+
+      if (!cleanNumber.startsWith("91")) {
+        cleanNumber = "91" + cleanNumber;
+      }
+
+      const formatted = `${cleanNumber}@c.us`;
+
+      console.log("📤 Sending to:", formatted);
+
+      // 🔥 IMPORTANT DELAY
+      await new Promise((res) => setTimeout(res, 5000));
+
+      const res = await this.client.sendMessage(formatted, message);
+
+      console.log("✅ WhatsApp sent");
+      return res;
+
+    } catch (err) {
+      console.log("❌ WhatsApp error:", err);
+    }
   }
 }
 

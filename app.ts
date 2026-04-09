@@ -9,8 +9,12 @@ dotenv.config();
 
 export const app = Fastify();
    app.register(fastifyCors, {
-  origin: true,  // Allow all origins for mobile and production access
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: (origin, callback) => {
+    callback(null, true); // Allow all origins
+  },
+  credentials: true, // Allow credentials (cookies, authorization headers)
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Include OPTIONS for preflight
+  allowedHeaders: ["Authorization", "Content-Type", "Accept"], // Allow common headers
 });
 // routes register
 app.register(authRoutes, { prefix: "/auth" });

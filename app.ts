@@ -9,7 +9,7 @@ dotenv.config();
 
 export const app = Fastify();
    app.register(fastifyCors, {
-  origin: "http://localhost:4200",
+  origin: true,  // Allow all origins for mobile and production access
   methods: ["GET", "POST", "PUT", "DELETE"],
 });
 // routes register

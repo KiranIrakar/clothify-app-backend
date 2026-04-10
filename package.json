@@ -16,7 +16,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "nodemon --exec ts-node server.ts",
+    "start": "npm run build && node dist/server.js",
     "dev": "nodemon --exec ts-node server.ts",
     "postinstall": "npx puppeteer browsers install chrome",
     "migrate": "ts-node src/scripts/migrate.ts"

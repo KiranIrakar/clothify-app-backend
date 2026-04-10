@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { AuthService } from "../services/auth.service";
+import { logger } from "../utils/logger";
 
 export class AuthController {
   private authService = new AuthService();
@@ -65,19 +66,18 @@ export class AuthController {
   };
 
   changePhoneRequest = async (req: FastifyRequest, reply: FastifyReply) => {
-   console.log("BODY:", req.body);  
-  const { phone }: any = req.body;
-  console.log("newPhone:", phone);
-  const userId = (req as any).user.id;
- 
-  const result = await this.authService.changePhoneRequest({
-    userId,
-    phone
-  });
- 
-  reply. send(result);
-}; 
- 
+    logger.debug("changePhoneRequest body", req.body);
+    const { phone }: any = req.body;
+    logger.info("Change phone request received", { phone });
+    const userId = (req as any).user.id;
+
+    const result = await this.authService.changePhoneRequest({
+      userId,
+      phone,
+    });
+
+    reply.send(result);
+  };
  
  
 verifyChangePhone = async (req: FastifyRequest, reply: FastifyReply) => {

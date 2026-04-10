@@ -10,7 +10,8 @@ class ProductController {
   }
 
   createProduct = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { name, description, price, stock, category }: any = req.body;
+    const body: any = req.body;
+    const { name, price }: any = body;
 
     if (!name || name.length < 2) {
       throw { statusCode: 400, message: "Name must be at least 2 chars" };
@@ -20,17 +21,7 @@ class ProductController {
       throw { statusCode: 400, message: "Invalid price" };
     }
 
-    if (stock == null || stock < 0) {
-      throw { statusCode: 400, message: "Invalid stock" };
-    }
-
-    const product = await this.productService.createProduct({
-      name,
-      description,
-      price,
-      stock,
-      category,
-    });
+    const product = await this.productService.createProduct(body);
 
     reply.send({ success: true, data: product });
   };

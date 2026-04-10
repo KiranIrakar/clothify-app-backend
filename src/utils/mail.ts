@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
+import { logger } from "./logger";
 
 export async function sendEmail(to: string, otp: string, name: string) {
   try {
@@ -56,18 +57,18 @@ htmlContent: `
 
     const data = await response.json();
 
-    console.log("BREVO RESPONSE:", data);
+    logger.info("BREVO response received", data);
 
     if (!response.ok) {
-      console.error("Brevo error:", data);
+      logger.error("Brevo error", data);
       throw new Error("Email failed");
     }
 
-    console.log("Email sent:", data);
+    logger.info("Email sent", data);
     return data;
 
   } catch (error) {
-    console.error("Email error:", error);
+    logger.error("Email error", error);
     throw error;
   }
 }

@@ -16,10 +16,10 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "nodemon --exec ts-node server.ts",
     "dev": "nodemon --exec ts-node server.ts",
     "postinstall": "npx puppeteer browsers install chrome",
-     "migrate": "ts-node src/scripts/migrate.ts"
+    "migrate": "ts-node src/scripts/migrate.ts"
   },
   "dependencies": {
     "@fastify/cors": "^10.1.0",

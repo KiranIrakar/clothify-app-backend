@@ -5,6 +5,8 @@ import { generateToken } from "../utils/jwt";
 import User from "../models/user.model";
 import bcrypt from "bcrypt";
 import { whatsappClient } from "../utils/whatsapp";
+import { logger } from "../utils/logger";
+
 export class AuthService {
 
   async signup(data: any) {
@@ -93,17 +95,16 @@ export class AuthService {
     await sendEmail(email, otp, user.getDataValue("name"));
     const phone = user.getDataValue("phone");
 
-    // ✅ SMS + WhatsApp
     if (phone) {
       await sendSMS(phone, otp);
 
       try {
         await whatsappClient.sendWhatsApp(
-          "919699150401",
+          phone,
           "Test message"
         );
       } catch (err) {
-        console.log("WhatsApp failed:", err);
+        logger.error("WhatsApp failed", err);
       }
     }
     return {
@@ -146,57 +147,91 @@ export class AuthService {
     const otp = generateOTP();
     const expiry = Date.now() + 5 * 60 * 1000;
 
+    try {
+      let user;
 
-    let user = await User.findOne({ where: { email } });
-
-    if (user) {
-      await user.update({
-        otp,
-        otp_expiry: expiry,
-        phone: phone || user.getDataValue("phone")
-      });
-    } else {
-      user = await User.create({
-        email,
-        phone,
-        otp,
-        otp_expiry: expiry
-      });
-    }
-
-    const finalPhone = phone || user.getDataValue("phone");
-
-    if (email) {
-      try {
-        await sendEmail(email, otp, user.getDataValue("name"));
-      } catch (err) {
-        console.log("❌ Email failed:", err);
+      // Search for existing user
+      if (email) {
+        user = await User.findOne({ where: { email } });
+      } else if (phone) {
+        user = await User.findOne({ where: { phone } });
       }
-    }
-    // ✅ SMS
-    if (finalPhone) {
-      try {
-        await sendSMS(finalPhone, otp);
-      } catch (err) {
-        console.log("❌ SMS failed:", err);
-      }
-    }
 
-    // ✅ WHATSAPP (FIXED)
-    if (finalPhone) {
-      try {
-        await whatsappClient.sendWhatsApp(
-          finalPhone,
-          `Your OTP is ${otp}`
-        );
-      } catch (err) {
-        console.log("❌ WhatsApp failed:", err);
+      if (user) {
+        // Update existing user
+        await user.update({
+          otp,
+          otp_expiry: expiry,
+          email: email || user.getDataValue("email"),
+          phone: phone || user.getDataValue("phone")
+        });
+      } else {
+        // Create new user
+        user = await User.create({
+          email: email || null,
+          phone: phone || null,
+          otp,
+          otp_expiry: expiry
+        });
       }
-    }
 
-    return {
-      message: "OTP generated and sent successfully"
-    };
+      const finalPhone = phone || user.getDataValue("phone");
+      const finalEmail = email || user.getDataValue("email");
+      let sent = false;
+      const errors = [];
+
+      // Try sending email if provided or exists
+      if (finalEmail) {
+        try {
+          await sendEmail(finalEmail, otp, user.getDataValue("name") || "User");
+          logger.info("Email sent successfully", { email: finalEmail });
+          sent = true;
+        } catch (err: any) {
+          logger.error("Email failed", err);
+          errors.push(`Email delivery failed: ${err?.message || "Unknown error"}`);
+        }
+      }
+
+      // Try sending SMS if phone provided or exists
+      if (finalPhone) {
+        try {
+          await sendSMS(finalPhone, otp);
+          logger.info("SMS sent successfully", { phone: finalPhone });
+          sent = true;
+        } catch (err: any) {
+          logger.error("SMS failed", err);
+          errors.push(`SMS delivery failed: ${err?.message || "Unknown error"}`);
+        }
+      }
+
+      // Try sending WhatsApp if phone provided or exists
+      if (finalPhone) {
+        try {
+          await whatsappClient.sendWhatsApp(
+            finalPhone,
+            `Your OTP is ${otp}`
+          );
+          logger.info("WhatsApp sent successfully", { phone: finalPhone });
+          sent = true;
+        } catch (err: any) {
+          logger.error("WhatsApp failed", err);
+          errors.push(`WhatsApp delivery failed: ${err?.message || "Unknown error"}`);
+        }
+      }
+
+      if (!sent) {
+        throw new Error(`OTP failed to send via all channels: ${errors.join("; ")}`);
+      }
+
+      return {
+        message: "OTP generated and sent successfully",
+        sentVia: finalEmail && finalPhone ? "email and SMS" : finalEmail ? "email" : "SMS",
+        userId: user.getDataValue("id")
+      };
+    } catch (err: any) {
+      console.error("🔥 generateOtp error:", err);
+      throw err;
+    }
   }
 
   async login(data: any) {

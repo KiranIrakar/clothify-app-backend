@@ -1,10 +1,18 @@
+// services/product.service.ts
+
 import Product from "../models/product.model";
-import { Op } from "sequelize";
+import { Op, WhereOptions } from "sequelize";
+import {
+  CreateProductInput,
+  UpdateProductInput,
+  GetProductsFilters,
+  PaginatedProductsResponse,
+  DeleteProductResponse,
+} from "../interface/product.types";
 
 class ProductService {
-
-  async createProduct(data: any) {
-    const { name, price, stock } = data;
+  async createProduct(data: CreateProductInput): Promise<Product> {
+    const { name, price } = data;
 
     if (!name || name.trim().length < 2) {
       throw { statusCode: 400, message: "Product name must be at least 2 characters" };
@@ -12,10 +20,6 @@ class ProductService {
 
     if (price == null || isNaN(price) || Number(price) <= 0) {
       throw { statusCode: 400, message: "Price must be a positive number" };
-    }
-
-    if (stock == null || !Number.isInteger(stock) || stock < 0) {
-      throw { statusCode: 400, message: "Stock must be a non-negative integer" };
     }
 
     const existingProduct = await Product.findOne({
@@ -29,31 +33,24 @@ class ProductService {
       };
     }
 
-    const product = await Product.create({
+    return await Product.create({
       ...data,
       name: name.trim(),
     });
-
-    return product;
   }
 
-  async getProducts(filters: any) {
-    const where: any = {};
+  async getProducts(filters: GetProductsFilters): Promise<PaginatedProductsResponse> {
+    const where: WhereOptions = {};
 
     if (filters.search) {
-      where.name = {
-        [Op.like]: `%${filters.search}%`,
-      };
+      where.name = { [Op.like]: `%${filters.search}%` };
     }
 
     if (filters.minPrice || filters.maxPrice) {
-      where.price = {};
-      if (filters.minPrice) {
-        where.price[Op.gte] = Number(filters.minPrice);
-      }
-      if (filters.maxPrice) {
-        where.price[Op.lte] = Number(filters.maxPrice);
-      }
+      where.price = {
+        ...(filters.minPrice && { [Op.gte]: Number(filters.minPrice) }),
+        ...(filters.maxPrice && { [Op.lte]: Number(filters.maxPrice) }),
+      };
     }
 
     const page = Number(filters.page) || 1;
@@ -64,18 +61,13 @@ class ProductService {
       where,
       limit,
       offset,
-      order: [["created_at", "DESC"]],
+      order: [["createdAt", "DESC"]],
     });
 
-    return {
-      total: count,
-      page,
-      limit,
-      data: rows,
-    };
+    return { total: count, page, limit, data: rows };
   }
 
-  async getProductById(id: string) {
+  async getProductById(id: string): Promise<Product> {
     const product = await Product.findByPk(id);
 
     if (!product) {
@@ -85,19 +77,17 @@ class ProductService {
     return product;
   }
 
-  async updateProduct(id: string, data: any) {
+  async updateProduct(id: string, data: UpdateProductInput): Promise<Product> {
     const product = await Product.findByPk(id);
 
     if (!product) {
       throw { statusCode: 404, message: "Product not found" };
     }
 
-    await product.update(data);
-
-    return product;
+    return await product.update(data);
   }
 
-  async deleteProduct(id: string) {
+  async deleteProduct(id: string): Promise<DeleteProductResponse> {
     const product = await Product.findByPk(id);
 
     if (!product) {

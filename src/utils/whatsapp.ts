@@ -1,7 +1,8 @@
-console.log("🚀 WhatsApp service starting...");
-
+import { logger } from "./logger";
 import { Client, LocalAuth } from "whatsapp-web.js";
 import qrcode from "qrcode-terminal";
+
+logger.info("WhatsApp service starting...");
 
 const isEnabled = process.env.WHATSAPP_ENABLED === "true";
 
@@ -11,37 +12,45 @@ class WhatsAppClient {
 
   constructor() {
     if (!isEnabled) {
-      console.log("❌ WhatsApp Disabled");
+      logger.info("WhatsApp disabled");
       return;
     }
 
-    console.log("📦 Initializing WhatsApp Client...");
+    logger.info("Initializing WhatsApp Client...");
 
     this.client = new Client({
       authStrategy: new LocalAuth()
     });
 
     this.client.on("qr", (qr) => {
-      console.log("📲 Scan WhatsApp QR");
+      logger.info("Scan WhatsApp QR");
       qrcode.generate(qr, { small: true });
     });
 
     this.client.on("ready", () => {
-      console.log("✅ WhatsApp Ready");
+      logger.info("WhatsApp Ready");
       this.isReady = true;
     });
 
-    this.client.initialize();
+    this.client.on("error", (err) => {
+      logger.error("WhatsApp error event", err);
+    });
+
+    try {
+      this.client.initialize();
+    } catch (err) {
+      logger.error("WhatsApp initialization error (non-blocking)", err);
+    }
   }
 
   async sendWhatsApp(number: string, message: string) {
     if (!isEnabled) {
-      console.log("⚠️ WhatsApp skipped");
+      logger.warn("WhatsApp skipped");
       return;
     }
 
     if (!this.isReady) {
-      console.log("❌ WhatsApp not ready yet");
+      logger.warn("WhatsApp not ready yet");
       return;
     }
 
@@ -54,18 +63,18 @@ class WhatsAppClient {
 
       const formatted = `${cleanNumber}@c.us`;
 
-      console.log("📤 Sending to:", formatted);
+      logger.info("Sending WhatsApp message", { formatted });
 
       // 🔥 IMPORTANT DELAY
       await new Promise((res) => setTimeout(res, 5000));
 
       const res = await this.client.sendMessage(formatted, message);
 
-      console.log("✅ WhatsApp sent");
+      logger.info("WhatsApp sent");
       return res;
 
     } catch (err) {
-      console.log("❌ WhatsApp error:", err);
+      logger.error("WhatsApp error", err);
     }
   }
 }

@@ -1,27 +1,45 @@
+// models/product.model.ts
+
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../config/db";
+import {
+  ProductAttributes,
+  ProductCreationAttributes,
+  Offer,
+  Color,
+  Size,
+  Delivery,
+  Review,
+  Store,
+} from "../interface/product.types";
 
-class Product extends Model {
-  public id!: string;
-  public name!: string;
-  public brand!: string;
-  public imageUrls!: string[];
-  public price!: number;
-  public mrp!: number;
-  public discountPercent!: number;
-  public currency!: string;
-  public rating!: number;
-  public ratingCount!: number;
+class Product extends Model<ProductAttributes, ProductCreationAttributes> {
+  declare id: string;
+  declare name: string;
+  declare price: number;
+  declare brand: string | null;
+  declare imageUrls: string[] | null;
+  declare mrp: number | null;
+  declare currency: string;
+  declare rating: number | null;
+  declare ratingCount: number | null;
+  declare offers: Offer[] | null;
+  declare colors: Color[] | null;
+  declare sizes: Size[] | null;
+  declare delivery: Delivery | null;
+  declare topReview: Review | null;
+  declare store: Store | null;
 
-  public offers!: object[];
-  public colors!: object[];
-  public sizes!: object[];
-  public delivery!: object;
-  public topReview!: object;
-  public store!: object;
+  get discountPercent(): number | null {
+    if (this.mrp && this.mrp > this.price) {
+      return Math.round(((this.mrp - this.price) / this.mrp) * 100);
+    }
+    return null;
+  }
 
-  public isWishlisted!: boolean;
-  public shareUrl!: string;
+  get shareUrl(): string {
+    return `/products/${this.id}`;
+  }
 }
 
 Product.init(
@@ -31,78 +49,51 @@ Product.init(
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
-
     name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-
     brand: {
       type: DataTypes.STRING,
     },
-
     imageUrls: {
-      type: DataTypes.JSON, 
+      type: DataTypes.JSON,
     },
-
     price: {
       type: DataTypes.FLOAT,
       allowNull: false,
     },
-
     mrp: {
       type: DataTypes.FLOAT,
     },
-
-    discountPercent: {
-      type: DataTypes.INTEGER,
-    },
-
     currency: {
       type: DataTypes.STRING,
       defaultValue: "INR",
     },
-
     rating: {
       type: DataTypes.FLOAT,
     },
-
     ratingCount: {
       type: DataTypes.INTEGER,
     },
-
     offers: {
-      type: DataTypes.JSON, 
+      type: DataTypes.JSON,
     },
-
     colors: {
       type: DataTypes.JSON,
     },
-
     sizes: {
       type: DataTypes.JSON,
     },
-
     delivery: {
       type: DataTypes.JSON,
     },
-
     topReview: {
       type: DataTypes.JSON,
     },
-
     store: {
       type: DataTypes.JSON,
     },
-
-    isWishlisted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-
-    shareUrl: {
-      type: DataTypes.STRING,
-    }
   },
   {
     sequelize,

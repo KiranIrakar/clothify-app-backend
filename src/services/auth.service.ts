@@ -2,6 +2,7 @@ import { generateOTP } from "../utils/otp";
 import { sendEmail } from "../utils/mail";
 import { sendSMS } from "../utils/sms";
 import { generateToken } from "../utils/jwt";
+import { validateIndianPhone } from "../utils/phone";
 import User from "../models/user.model";
 import bcrypt from "bcrypt";
 import { whatsappClient } from "../utils/whatsapp";
@@ -16,13 +17,16 @@ export class AuthService {
       throw new Error("Email, Name and Password are required");
     }
 
+    if (phone) {
+      validateIndianPhone(phone);
+    }
+
     const existingUser = await User.findOne({ where: { email } });
     if (existingUser) {
       throw new Error("User already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-
 
     const user = await User.create({
       email,
@@ -43,8 +47,28 @@ export class AuthService {
     };
   }
 
-  async verifyOtp(email: string, otp: string) {
-    const user = await User.findOne({ where: { email } });
+  async verifyOtp(data: { email?: string; phone?: string; otp: string }) {
+    const { email, phone, otp } = data;
+
+    if (!otp) {
+      throw new Error("OTP is required");
+    }
+
+    if (!email && !phone) {
+      throw new Error("Email or phone is required to verify OTP");
+    }
+
+    if (phone) {
+      validateIndianPhone(phone);
+    }
+
+    let user = null;
+    if (email) {
+      user = await User.findOne({ where: { email } });
+    }
+    if (!user && phone) {
+      user = await User.findOne({ where: { phone } });
+    }
 
     if (!user) throw new Error("User not found");
 
@@ -77,8 +101,24 @@ export class AuthService {
     };
   }
 
-  async resendOtp(email: string) {
-    const user = await User.findOne({ where: { email } });
+  async resendOtp(data: { email?: string; phone?: string }) {
+    const { email, phone } = data;
+
+    if (!email && !phone) {
+      throw new Error("Email or phone is required to resend OTP");
+    }
+
+    if (phone) {
+      validateIndianPhone(phone);
+    }
+
+    let user = null;
+    if (email) {
+      user = await User.findOne({ where: { email } });
+    }
+    if (!user && phone) {
+      user = await User.findOne({ where: { phone } });
+    }
 
     if (!user) {
       throw new Error("User not found");
@@ -92,23 +132,43 @@ export class AuthService {
       otp_expiry: expiry
     });
 
-    await sendEmail(email, otp, user.getDataValue("name"));
-    const phone = user.getDataValue("phone");
+    const finalEmail = user.getDataValue("email");
+    const finalPhone = user.getDataValue("phone");
+    let sent = false;
+    const errors: string[] = [];
 
-    if (phone) {
-      await sendSMS(phone, otp);
+    if (finalEmail) {
+      try {
+        await sendEmail(finalEmail, otp, user.getDataValue("name"));
+        sent = true;
+      } catch (err: any) {
+        logger.error("Email failed", err);
+        errors.push(`Email delivery failed: ${err?.message || "Unknown error"}`);
+      }
+    }
+
+    if (finalPhone) {
+      try {
+        await sendSMS(finalPhone, otp);
+        sent = true;
+      } catch (err: any) {
+        logger.error("SMS failed", err);
+        errors.push(`SMS delivery failed: ${err?.message || "Unknown error"}`);
+      }
 
       try {
-        await whatsappClient.sendWhatsApp(
-          phone,
-          "Test message"
-        );
-      } catch (err) {
+        await whatsappClient.sendWhatsApp(finalPhone, "Test message");
+      } catch (err: any) {
         logger.error("WhatsApp failed", err);
       }
     }
+
+    if (!sent) {
+      throw new Error(`OTP resend failed: ${errors.join("; ")}`);
+    }
+
     return {
-      message: `OTP resent successfully to ${email}`
+      message: `OTP resent successfully${finalEmail && finalPhone ? " via email and SMS" : finalEmail ? " to email" : " to phone"}`
     };
   }
 
@@ -144,6 +204,10 @@ export class AuthService {
       throw new Error("Email or phone required");
     }
 
+    if (phone) {
+      validateIndianPhone(phone);
+    }
+
     const otp = generateOTP();
     const expiry = Date.now() + 5 * 60 * 1000;
 
@@ -153,7 +217,8 @@ export class AuthService {
       // Search for existing user
       if (email) {
         user = await User.findOne({ where: { email } });
-      } else if (phone) {
+      }
+      if (!user && phone) {
         user = await User.findOne({ where: { phone } });
       }
 
@@ -279,6 +344,8 @@ export class AuthService {
       throw new Error("New phone number required");
     }
 
+    validateIndianPhone(phone);
+
     const user = await User.findByPk(userId);
     if (!user) throw new Error("User not found");
 
@@ -287,7 +354,7 @@ export class AuthService {
 
     await User.update(
       {
-        phone: phone,
+        temprory_phone: phone,
         otp,
         otp_expiry: expiry
       },
@@ -326,7 +393,7 @@ export class AuthService {
       throw new Error("OTP expired");
     }
 
-    const newPhone = user.getDataValue("temp_phone");
+    const newPhone = user.getDataValue("temprory_phone");
 
     if (!newPhone) {
       throw new Error("No phone change request found");
@@ -334,7 +401,7 @@ export class AuthService {
 
     await user.update({
       phone: newPhone,
-      temp_phone: null,
+      temprory_phone: null,
       otp: null,
       otp_expiry: null
     });

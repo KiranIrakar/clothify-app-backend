@@ -1,5 +1,6 @@
 ﻿import twilio from "twilio";
 import { logger } from "./logger";
+import { validateIndianPhone } from "./phone";
 
 const accountSid = process.env.TWILIO_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -11,22 +12,8 @@ if (!accountSid || !authToken || !fromPhone) {
 
 const client = twilio(accountSid, authToken);
 
-function normalizePhone(phone: string): string {
-  const normalized = phone.trim();
-  if (!normalized) {
-    throw new Error("A valid phone number is required.");
-  }
-
-  const digits = normalized.replace(/[^0-9+]/g, "");
-  if (!digits.startsWith("+")) {
-    throw new Error("Phone number must be in E.164 format with country code, e.g. +919999999999.");
-  }
-
-  return digits;
-}
-
 export async function sendSMS(phone: string, otp: string) {
-  const to = normalizePhone(phone);
+  const to = validateIndianPhone(phone);
   try {
     const message = await client.messages.create({
       body: `CLOTHIFY: Your OTP is ${otp}. Do not share it with anyone.`,

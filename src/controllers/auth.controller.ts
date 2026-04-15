@@ -19,16 +19,16 @@ export class AuthController {
   };
 
   verifyOtp = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { email, otp }: any = req.body;
+    const { email, phone, otp }: any = req.body;
 
-    const result = await this.authService.verifyOtp(email, otp);
+    const result = await this.authService.verifyOtp({ email, phone, otp });
     reply.send(result);
   };
 
   resendOtp = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { email }: any = req.body;
+    const { email, phone }: any = req.body;
 
-    const result = await this.authService.resendOtp(email);
+    const result = await this.authService.resendOtp({ email, phone });
     reply.send(result);
   };
 

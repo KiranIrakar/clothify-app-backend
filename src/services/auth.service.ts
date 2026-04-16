@@ -5,7 +5,7 @@ import { generateToken } from "../utils/jwt";
 import { validateIndianPhone } from "../utils/phone";
 import User from "../models/user.model";
 import bcrypt from "bcrypt";
-import { whatsappClient } from "../utils/whatsapp";
+// import { whatsappClient } from "../utils/whatsapp";
 import { logger } from "../utils/logger";
 
 export class AuthService {
@@ -156,11 +156,11 @@ export class AuthService {
         errors.push(`SMS delivery failed: ${err?.message || "Unknown error"}`);
       }
 
-      try {
-        await whatsappClient.sendWhatsApp(finalPhone, "Test message");
-      } catch (err: any) {
-        logger.error("WhatsApp failed", err);
-      }
+      // try {
+      //   await whatsappClient.sendWhatsApp(finalPhone, "Test message");
+      // } catch (err: any) {
+      //   logger.error("WhatsApp failed", err);
+      // }
     }
 
     if (!sent) {
@@ -271,17 +271,17 @@ export class AuthService {
 
       // Try sending WhatsApp if phone provided or exists
       if (finalPhone) {
-        try {
-          await whatsappClient.sendWhatsApp(
-            finalPhone,
-            `Your OTP is ${otp}`
-          );
-          logger.info("WhatsApp sent successfully", { phone: finalPhone });
-          sent = true;
-        } catch (err: any) {
-          logger.error("WhatsApp failed", err);
-          errors.push(`WhatsApp delivery failed: ${err?.message || "Unknown error"}`);
-        }
+        // try {
+        //   await whatsappClient.sendWhatsApp(
+        //     finalPhone,
+        //     `Your OTP is ${otp}`
+        //   );
+        //   logger.info("WhatsApp sent successfully", { phone: finalPhone });
+        //   sent = true;
+        // } catch (err: any) {
+        //   logger.error("WhatsApp failed", err);
+        //   errors.push(`WhatsApp delivery failed: ${err?.message || "Unknown error"}`);
+        // }
       }
 
       if (!sent) {
@@ -364,15 +364,6 @@ export class AuthService {
     );
 
     await sendSMS(phone, otp);
-    try {
-      await whatsappClient.sendWhatsApp(
-        phone,
-        `Your OTP for phone change is ${otp}`
-      );
-    } catch (err) {
-      console.log("WhatsApp failed:", err);
-    }
-
     return {
       message: "OTP sent to new phone number"
     };

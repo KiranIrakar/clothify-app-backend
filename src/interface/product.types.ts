@@ -45,7 +45,7 @@ export interface ProductAttributes {
   stock: number;         
   category: string;      
   mrp?: number | null;
-  currency: string;
+  currency?: string | null;
   rating?: number | null;
   ratingCount?: number | null;
   offers?: Offer[] | null;
@@ -65,11 +65,11 @@ export interface ProductCreationAttributes
 export interface CreateProductInput {
   name: string;
   price: number;
+  description?: string;
+  stock?: number;
+  category?: string;
   brand?: string;
   imageUrls?: string[];
-  description?: string;
-  stock: number;
-  category: string;
   mrp?: number;
   currency?: string;
   rating?: number;

@@ -1,8 +1,6 @@
-import { FastifyRequest, FastifyReply } from "fastify";
-import type { Multipart } from "@fastify/multipart";
+import { FastifyReply, FastifyRequest } from "fastify";
 import ProductService from "../services/product.service";
 import { validate as isUUID } from "uuid";
-import cloudinary from "../config/cloudinary";
 
 class ProductController {
   private productService: ProductService;
@@ -15,7 +13,6 @@ class ProductController {
     try {
       const { name, description, price, stock, category }: any = req.body;
 
-      // ✅ Validations
       if (!name || name.length < 2) {
         throw { statusCode: 400, message: "Name must be at least 2 chars" };
       }
@@ -36,7 +33,7 @@ class ProductController {
         category,
       });
 
-      req.log.info({ product }, "✅ Product created successfully");
+      req.log.info({ product }, "Product created successfully");
 
       reply.send({
         message: "Product created successfully",
@@ -45,7 +42,7 @@ class ProductController {
       });
 
     } catch (error: any) {
-      req.log.error(error, "❌ Create product error");
+      req.log.error(error, "Create product error");
 
       reply.status(error.statusCode || 500).send({
         success: false,
@@ -55,14 +52,14 @@ class ProductController {
   };
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      req.log.info("📦 Fetching all products");
+      req.log.info("Fetching all products");
 
       const query: any = req.query;
       const products = await this.productService.getProducts(query);
 
       reply.send({ success: true, ...products });
     } catch (error: any) {
-      req.log.error(error, "❌ Get all products error");
+      req.log.error(error, "Get all products error");
       reply.status(500).send({ message: "Failed to fetch products" });
     }
   };
@@ -79,7 +76,7 @@ class ProductController {
 
       reply.send({ success: true, data: product });
     } catch (error: any) {
-      req.log.error(error, "❌ Get product by ID error");
+      req.log.error(error, "Get product by ID error");
       reply.status(error.statusCode || 500).send({
         message: error.message || "Failed to fetch product",
       });
@@ -103,7 +100,7 @@ class ProductController {
 
       reply.send({ success: true, data: product });
     } catch (error: any) {
-      req.log.error(error, "❌ Update product error");
+      req.log.error(error, "Update product error");
       reply.status(error.statusCode || 500).send({
         message: error.message || "Failed to update product",
       });
@@ -122,7 +119,7 @@ class ProductController {
 
       reply.send({ success: true, ...result });
     } catch (error: any) {
-      req.log.error(error, "❌ Delete product error");
+      req.log.error(error, "Delete product error");
       reply.status(error.statusCode || 500).send({
         message: error.message || "Failed to delete product",
       });

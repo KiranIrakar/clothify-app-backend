@@ -3,12 +3,34 @@ import { sendEmail } from "../utils/mail";
 import { sendSMS } from "../utils/sms";
 import { generateToken } from "../utils/jwt";
 import { validateIndianPhone } from "../utils/phone";
-import User from "../models/user.model";
+import UserProfile from "../models/user-profile.model";
 import bcrypt from "bcrypt";
 // import { whatsappClient } from "../utils/whatsapp";
 import { logger } from "../utils/logger";
 
 export class AuthService {
+  private async findUserByEmailOrPhone(email?: string, phone?: string) {
+    if (email) {
+      const user = await UserProfile.findOne({ where: { email } });
+      if (user) {
+        return user;
+      }
+    }
+
+    if (phone) {
+      return UserProfile.findOne({ where: { mobileNumber: phone } });
+    }
+
+    return null;
+  }
+
+  private formatUser(user: UserProfile) {
+    return {
+      id: user.getDataValue("id"),
+      email: user.getDataValue("email"),
+      name: user.getDataValue("fullName"),
+    };
+  }
 
   async signup(data: any) {
     const { email, name, password, phone } = data;
@@ -21,29 +43,23 @@ export class AuthService {
       validateIndianPhone(phone);
     }
 
-    const existingUser = await User.findOne({ where: { email } });
+    const existingUser = await this.findUserByEmailOrPhone(email, phone);
     if (existingUser) {
       throw new Error("User already exists");
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
+    const user = await UserProfile.create({
       email,
-      name,
+      fullName: name,
       password: hashedPassword,
-      phone
+      mobileNumber: phone,
     });
-
-
 
     return {
       message: `User registered successfully`,
-      user: {
-        id: user.getDataValue("id"),
-        email: user.getDataValue("email"),
-        name: user.getDataValue("name")
-      }
+      user: this.formatUser(user),
     };
   }
 
@@ -62,13 +78,7 @@ export class AuthService {
       validateIndianPhone(phone);
     }
 
-    let user = null;
-    if (email) {
-      user = await User.findOne({ where: { email } });
-    }
-    if (!user && phone) {
-      user = await User.findOne({ where: { phone } });
-    }
+    const user = await this.findUserByEmailOrPhone(email, phone);
 
     if (!user) throw new Error("User not found");
 
@@ -76,7 +86,9 @@ export class AuthService {
       throw new Error("Invalid OTP");
     }
 
-    if (Date.now() > user.getDataValue("otp_expiry")) {
+    const otpExpiry = user.getDataValue("otp_expiry") as Date | null;
+
+    if (!otpExpiry || Date.now() > otpExpiry.getTime()) {
       throw new Error("OTP expired");
     }
 
@@ -93,11 +105,7 @@ export class AuthService {
     return {
       message: "Login successful",
       token,
-      user: {
-        id: user.getDataValue("id"),
-        email: user.getDataValue("email"),
-        name: user.getDataValue("name")
-      }
+      user: this.formatUser(user),
     };
   }
 
@@ -112,20 +120,14 @@ export class AuthService {
       validateIndianPhone(phone);
     }
 
-    let user = null;
-    if (email) {
-      user = await User.findOne({ where: { email } });
-    }
-    if (!user && phone) {
-      user = await User.findOne({ where: { phone } });
-    }
+    const user = await this.findUserByEmailOrPhone(email, phone);
 
     if (!user) {
       throw new Error("User not found");
     }
 
     const otp = generateOTP();
-    const expiry = Date.now() + 5 * 60 * 1000;
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
     await user.update({
       otp,
@@ -133,13 +135,13 @@ export class AuthService {
     });
 
     const finalEmail = user.getDataValue("email");
-    const finalPhone = user.getDataValue("phone");
+    const finalPhone = user.getDataValue("mobileNumber");
     let sent = false;
     const errors: string[] = [];
 
     if (finalEmail) {
       try {
-        await sendEmail(finalEmail, otp, user.getDataValue("name"));
+        await sendEmail(finalEmail, otp, user.getDataValue("fullName") || "User");
         sent = true;
       } catch (err: any) {
         logger.error("Email failed", err);
@@ -179,7 +181,7 @@ export class AuthService {
       throw new Error("Email and new password required");
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await UserProfile.findOne({ where: { email } });
 
     if (!user) {
       throw new Error("User not found");
@@ -209,46 +211,37 @@ export class AuthService {
     }
 
     const otp = generateOTP();
-    const expiry = Date.now() + 5 * 60 * 1000;
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
     try {
       let user;
 
-      // Search for existing user
-      if (email) {
-        user = await User.findOne({ where: { email } });
-      }
-      if (!user && phone) {
-        user = await User.findOne({ where: { phone } });
-      }
+      user = await this.findUserByEmailOrPhone(email, phone);
 
       if (user) {
-        // Update existing user
         await user.update({
           otp,
           otp_expiry: expiry,
           email: email || user.getDataValue("email"),
-          phone: phone || user.getDataValue("phone")
+          mobileNumber: phone || user.getDataValue("mobileNumber"),
         });
       } else {
-        // Create new user
-        user = await User.create({
+        user = await UserProfile.create({
           email: email || null,
-          phone: phone || null,
+          mobileNumber: phone || null,
           otp,
-          otp_expiry: expiry
+          otp_expiry: expiry,
         });
       }
 
-      const finalPhone = phone || user.getDataValue("phone");
+      const finalPhone = phone || user.getDataValue("mobileNumber");
       const finalEmail = email || user.getDataValue("email");
       let sent = false;
       const errors = [];
 
-      // Try sending email if provided or exists
       if (finalEmail) {
         try {
-          await sendEmail(finalEmail, otp, user.getDataValue("name") || "User");
+          await sendEmail(finalEmail, otp, user.getDataValue("fullName") || "User");
           logger.info("Email sent successfully", { email: finalEmail });
           sent = true;
         } catch (err: any) {
@@ -257,7 +250,6 @@ export class AuthService {
         }
       }
 
-      // Try sending SMS if phone provided or exists
       if (finalPhone) {
         try {
           await sendSMS(finalPhone, otp);
@@ -269,7 +261,6 @@ export class AuthService {
         }
       }
 
-      // Try sending WhatsApp if phone provided or exists
       if (finalPhone) {
         // try {
         //   await whatsappClient.sendWhatsApp(
@@ -306,15 +297,21 @@ export class AuthService {
       throw new Error("Email and Password are required");
     }
 
-    const user = await User.findOne({ where: { email } });
+    const user = await UserProfile.findOne({ where: { email } });
 
     if (!user) {
       throw new Error("Invalid email or password");
     }
 
+    const hashedPassword = user.getDataValue("password") as string | null;
+
+    if (!hashedPassword) {
+      throw new Error("Invalid email or password");
+    }
+
     const isMatch = await bcrypt.compare(
       password,
-      user.getDataValue("password")
+      hashedPassword
     );
 
     if (!isMatch) {
@@ -329,11 +326,7 @@ export class AuthService {
     return {
       message: "Login successful",
       token,
-      user: {
-        id: user.getDataValue("id"),
-        email: user.getDataValue("email"),
-        name: user.getDataValue("name")
-      }
+      user: this.formatUser(user),
     };
   }
 
@@ -346,20 +339,20 @@ export class AuthService {
 
     validateIndianPhone(phone);
 
-    const user = await User.findByPk(userId);
+    const user = await UserProfile.findByPk(userId);
     if (!user) throw new Error("User not found");
 
     const otp = generateOTP();
-    const expiry = Date.now() + 5 * 60 * 1000;
+    const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
-    await User.update(
+    await UserProfile.update(
       {
         temprory_phone: phone,
         otp,
-        otp_expiry: expiry
+        otp_expiry: expiry,
       },
       {
-        where: { id: userId }
+        where: { id: userId },
       }
     );
 
@@ -373,14 +366,16 @@ export class AuthService {
   async verifyChangePhone(data: any) {
     const { userId, otp } = data;
 
-    const user = await User.findByPk(userId);
+    const user = await UserProfile.findByPk(userId);
     if (!user) throw new Error("User not found");
 
     if (user.getDataValue("otp") !== otp) {
       throw new Error("Invalid OTP");
     }
 
-    if (Date.now() > user.getDataValue("otp_expiry")) {
+    const otpExpiry = user.getDataValue("otp_expiry") as Date | null;
+
+    if (!otpExpiry || Date.now() > otpExpiry.getTime()) {
       throw new Error("OTP expired");
     }
 
@@ -391,10 +386,10 @@ export class AuthService {
     }
 
     await user.update({
-      phone: newPhone,
+      mobileNumber: newPhone,
       temprory_phone: null,
       otp: null,
-      otp_expiry: null
+      otp_expiry: null,
     });
 
     return {

@@ -3,12 +3,25 @@ import { sendEmail } from "../utils/mail";
 import { sendSMS } from "../utils/sms";
 import { generateToken } from "../utils/jwt";
 import { validateIndianPhone } from "../utils/phone";
-import User from "../models/user.model";
+import User from "../models/user-profile.model";
 import bcrypt from "bcrypt";
 // import { whatsappClient } from "../utils/whatsapp";
 import { logger } from "../utils/logger";
 
 export class AuthService {
+  private getOtpExpiryTime(user: any): number {
+    const otpExpiry = user.getDataValue("otp_expiry");
+
+    if (!otpExpiry) {
+      return 0;
+    }
+
+    return otpExpiry instanceof Date ? otpExpiry.getTime() : Number(otpExpiry);
+  }
+
+  private getUserName(user: any): string {
+    return user.getDataValue("name") || "User";
+  }
 
   async signup(data: any) {
     const { email, name, password, phone } = data;
@@ -76,7 +89,7 @@ export class AuthService {
       throw new Error("Invalid OTP");
     }
 
-    if (Date.now() > user.getDataValue("otp_expiry")) {
+    if (Date.now() > this.getOtpExpiryTime(user)) {
       throw new Error("OTP expired");
     }
 
@@ -139,7 +152,7 @@ export class AuthService {
 
     if (finalEmail) {
       try {
-        await sendEmail(finalEmail, otp, user.getDataValue("name"));
+        await sendEmail(finalEmail, otp, this.getUserName(user));
         sent = true;
       } catch (err: any) {
         logger.error("Email failed", err);
@@ -248,7 +261,7 @@ export class AuthService {
       // Try sending email if provided or exists
       if (finalEmail) {
         try {
-          await sendEmail(finalEmail, otp, user.getDataValue("name") || "User");
+          await sendEmail(finalEmail, otp, this.getUserName(user));
           logger.info("Email sent successfully", { email: finalEmail });
           sent = true;
         } catch (err: any) {
@@ -312,9 +325,14 @@ export class AuthService {
       throw new Error("Invalid email or password");
     }
 
+    const hashedPassword = user.getDataValue("password");
+    if (!hashedPassword) {
+      throw new Error("Invalid email or password");
+    }
+
     const isMatch = await bcrypt.compare(
       password,
-      user.getDataValue("password")
+      hashedPassword
     );
 
     if (!isMatch) {
@@ -344,7 +362,7 @@ export class AuthService {
       throw new Error("New phone number required");
     }
 
-    validateIndianPhone(phone);
+    const validatedPhone = validateIndianPhone(phone);
 
     const user = await User.findByPk(userId);
     if (!user) throw new Error("User not found");
@@ -354,7 +372,7 @@ export class AuthService {
 
     await User.update(
       {
-        temprory_phone: phone,
+        temprory_phone: validatedPhone,
         otp,
         otp_expiry: expiry
       },
@@ -363,7 +381,16 @@ export class AuthService {
       }
     );
 
-    await sendSMS(phone, otp);
+    await sendSMS(validatedPhone, otp);
+    try {
+      // await whatsappClient.sendWhatsApp(
+      //   validatedPhone,
+      //   `Your OTP for phone change is ${otp}`
+      // );
+    } catch (err) {
+      console.log("WhatsApp failed:", err);
+    }
+
     return {
       message: "OTP sent to new phone number"
     };
@@ -380,7 +407,7 @@ export class AuthService {
       throw new Error("Invalid OTP");
     }
 
-    if (Date.now() > user.getDataValue("otp_expiry")) {
+    if (Date.now() > this.getOtpExpiryTime(user)) {
       throw new Error("OTP expired");
     }
 

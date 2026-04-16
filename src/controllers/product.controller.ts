@@ -12,7 +12,8 @@ class ProductController {
   }
 
   createProduct = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { name, description, price, stock, category }: any = req.body;
+    try {
+      const { name, description, price, stock, category }: any = req.body;
 
       // ✅ Validations
       if (!name || name.length < 2) {
@@ -23,17 +24,17 @@ class ProductController {
         throw { statusCode: 400, message: "Invalid price" };
       }
 
-    if (stock == null || stock < 0) {
-      throw { statusCode: 400, message: "Invalid stock" };
-    }
+      if (stock == null || stock < 0) {
+        throw { statusCode: 400, message: "Invalid stock" };
+      }
 
-    const product = await this.productService.createProduct({
-      name,
-      description,
-      price,
-      stock,
-      category,
-    });
+      const product = await this.productService.createProduct({
+        name,
+        description,
+        price,
+        stock,
+        category,
+      });
 
       req.log.info({ product }, "✅ Product created successfully");
 
@@ -42,6 +43,7 @@ class ProductController {
         success: true,
         data: product,
       });
+
     } catch (error: any) {
       req.log.error(error, "❌ Create product error");
 
@@ -51,7 +53,6 @@ class ProductController {
       });
     }
   };
-
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       req.log.info("📦 Fetching all products");

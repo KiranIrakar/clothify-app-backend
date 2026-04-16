@@ -4,7 +4,7 @@ dotenv.config();
 import fs from "fs";
 import path from "path";
 import { Client } from "pg";
-import { logger } from "../utils/logger";
+import logger from "../config/logger";
 
 const client = new Client({
   host: process.env.DB_HOST,
@@ -41,8 +41,7 @@ async function migrate() {
       );
 
       if (res.rows.length === 0) {
-        logger.info(`Running migration`, { file });
-
+        logger.info({ file }, "Running migration");
         const sql = fs.readFileSync(
           path.join(migrationsPath, file),
           "utf-8"
@@ -55,16 +54,16 @@ async function migrate() {
           [file]
         );
 
-        logger.info(`Migration completed`, { file });
+        logger.info({ file }, "Migration completed");
       } else {
-        logger.info(`Migration skipped`, { file });
+        logger.info({ file }, "Migration already run, skipping");
       }
     }
 
     logger.info("All migrations completed");
     await client.end();
   } catch (err) {
-    logger.error("Migration failed", err);
+    logger.error({ err }, "Migration failed");
     await client.end();
   }
 }

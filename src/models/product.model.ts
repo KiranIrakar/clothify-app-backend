@@ -8,9 +8,11 @@ class Product extends Model {
   public description!: string;
   public image_url!: string;
   public public_id!: string;
+  public stock!: number;
+  public category!: string;
+  public currency!: string;
   public created_at!: Date;
   public updated_at!: Date;
-
 }
 
 Product.init(
@@ -39,13 +41,28 @@ Product.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    stock: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+
+    category: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    currency: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "INR",
+    },
     created_at: {
       type: DataTypes.DATE,
-      allowNull: false, 
+      allowNull: false,
     },
     updated_at: {
       type: DataTypes.DATE,
-      allowNull: false, 
+      allowNull: false,
     },
 
   },

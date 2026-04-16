@@ -1,7 +1,3 @@
-// types/product.types.ts
-
-// ─── JSON Field Interfaces ────────────────────────────────────────────────────
-
 export interface Offer {
   title: string;
   description: string;
@@ -38,7 +34,6 @@ export interface Store {
   location?: string;
 }
 
-// ─── Model Interfaces ─────────────────────────────────────────────────────────
 
 export interface ProductAttributes {
   id: string;
@@ -46,6 +41,9 @@ export interface ProductAttributes {
   price: number;
   brand?: string | null;
   imageUrls?: string[] | null;
+  description?: string;  
+  stock: number;         
+  category: string;      
   mrp?: number | null;
   currency: string;
   rating?: number | null;
@@ -64,13 +62,14 @@ export interface ProductCreationAttributes
   currency?: string;
 }
 
-// ─── Service Interfaces ───────────────────────────────────────────────────────
-
 export interface CreateProductInput {
   name: string;
   price: number;
   brand?: string;
   imageUrls?: string[];
+  description?: string;
+  stock: number;
+  category: string;
   mrp?: number;
   currency?: string;
   rating?: number;

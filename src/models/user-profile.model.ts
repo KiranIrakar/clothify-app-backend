@@ -10,11 +10,15 @@ class UserProfile
   implements UserProfileAttributes
 {
   public id!: string;
-  public fullName!: string;
-  public email!: string;
-  public mobileNumber!: string;
+  public fullName!: string | null;
+  public email!: string | null;
+  public mobileNumber!: string | null;
   public password!: string | null;
   public isVerified!: boolean;
+  public role!: string;
+  public otp!: string | null;
+  public otp_expiry!: Date | null;
+  public temprory_phone!: string | null;
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 }
@@ -28,11 +32,11 @@ UserProfile.init(
     },
     fullName: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     email: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       unique: true,
       validate: {
         isEmail: true,
@@ -40,15 +44,33 @@ UserProfile.init(
     },
     mobileNumber: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
+      unique: true,
     },
     password: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-  isVerified: {
+    isVerified: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+    },
+    role: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: "ROLE_USER",
+    },
+    otp: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    otp_expiry: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    temprory_phone: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {

@@ -1,127 +1,155 @@
-import { FastifyReply, FastifyRequest } from "fastify";
+import { FastifyRequest, FastifyReply } from "fastify";
 import ProductService from "../services/product.service";
 import { validate as isUUID } from "uuid";
 
 class ProductController {
-  private productService: ProductService;
+  constructor(private productService: ProductService) { }
 
-  constructor(productService: ProductService) {
-    this.productService = productService;
-  }
-
+  // ✅ CREATE (MULTIPART ONLY)
   createProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { name, description, price, stock, category }: any = req.body;
+      const file = await (req as any).file();
 
-      if (!name || name.length < 2) {
-        throw { statusCode: 400, message: "Name must be at least 2 chars" };
+      if (!file) {
+        return reply.status(400).send({
+          success: false,
+          message: "Image file is required",
+        });
       }
 
-      if (price == null || isNaN(price) || Number(price) <= 0) {
-        throw { statusCode: 400, message: "Invalid price" };
-      }
+      const { name, price, stock, description, category }: any = file.fields;
 
-      if (stock == null || stock < 0) {
-        throw { statusCode: 400, message: "Invalid stock" };
-      }
+      const buffer = await file.toBuffer();
 
       const product = await this.productService.createProduct({
-        name,
-        description,
-        price,
-        stock,
-        category,
+        name: name.value,
+        price: Number(price.value),
+        stock: Number(stock?.value || 0),
+        description: description?.value,
+        category: category?.value,
+        fileBuffer: buffer,
       });
 
-      req.log.info({ product }, "Product created successfully");
-
       reply.send({
-        message: "Product created successfully",
         success: true,
+        message: "Product created successfully",
         data: product,
       });
     } catch (error: any) {
-      req.log.error(error, "Create product error");
-
       reply.status(error.statusCode || 500).send({
         success: false,
-        message: error.message || "Internal Server Error",
+        message: error.message || "Error creating product",
       });
     }
   };
 
+  // ✅ GET ALL
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      req.log.info("Fetching all products");
-
       const query: any = req.query;
       const products = await this.productService.getProducts(query);
 
-      reply.send({ success: true, ...products });
+      reply.send({
+        success: true,
+        message: "Products fetched successfully",
+        ...products,
+      });
     } catch (error: any) {
-      req.log.error(error, "Get all products error");
-      reply.status(500).send({ message: "Failed to fetch products" });
+      reply.status(500).send({
+        success: false,
+        message: "Failed to fetch products",
+      });
     }
   };
 
+  // ✅ GET BY ID
   getProductById = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id }: any = req.params;
 
       if (!id || !isUUID(id)) {
-        throw { statusCode: 400, message: "Invalid UUID" };
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid UUID",
+        });
       }
 
       const product = await this.productService.getProductById(id);
 
       reply.send({ success: true, data: product });
     } catch (error: any) {
-      req.log.error(error, "Get product by ID error");
       reply.status(error.statusCode || 500).send({
-        message: error.message || "Failed to fetch product",
+        success: false,
+        message: error.message,
       });
     }
   };
 
-  updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+ updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const { id }: any = req.params;
+
+    if (!id || !isUUID(id)) {
+      return reply.status(400).send({
+        success: false,
+        message: "Invalid UUID",
+      });
+    }
+
+    let file: any = null;
+    let buffer: Buffer | null = null;
+    let fields: any = {};
+
     try {
-      const { id }: any = req.params;
-      const body: any = req.body;
+      file = await (req as any).file();
 
-      if (!id || !isUUID(id)) {
-        throw { statusCode: 400, message: "Invalid UUID" };
+      if (file) {
+        buffer = await file.toBuffer();
+        fields = file.fields || {};
       }
-
-      if (body.price && (isNaN(body.price) || body.price <= 0)) {
-        throw { statusCode: 400, message: "Invalid price" };
-      }
-
-      const product = await this.productService.updateProduct(id, body);
-
-      reply.send({ success: true, data: product });
-    } catch (error: any) {
-      req.log.error(error, "Update product error");
-      reply.status(error.statusCode || 500).send({
-        message: error.message || "Failed to update product",
-      });
+    } catch (err) {
+      // no file sent → totally OK
     }
-  };
 
+    const payload = {
+      name: fields?.name?.value,
+      price: fields?.price?.value,
+      stock: fields?.stock?.value,
+      description: fields?.description?.value,
+      category: fields?.category?.value,
+      fileBuffer: buffer, // ✅ optional image
+    };
+
+    const product = await this.productService.updateProduct(id, payload);
+
+    reply.send({ success: true, data: product });
+  } catch (error: any) {
+    reply.status(error.statusCode || 500).send({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+  // ✅ DELETE
   deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id }: any = req.params;
 
       if (!id || !isUUID(id)) {
-        throw { statusCode: 400, message: "Invalid UUID" };
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid UUID",
+        });
       }
 
       const result = await this.productService.deleteProduct(id);
 
       reply.send({ success: true, ...result });
     } catch (error: any) {
-      req.log.error(error, "Delete product error");
       reply.status(error.statusCode || 500).send({
-        message: error.message || "Failed to delete product",
+        success: false,
+        message: error.message,
       });
     }
   };

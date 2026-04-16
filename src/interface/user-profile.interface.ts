@@ -1,18 +1,11 @@
 
 export interface UserProfileAttributes {
   id: string;
-  fullName?: string | null;
-  name?: string | null;
-  email?: string | null;
-  mobileNumber?: string | null;
-  phone?: string | null;
+  fullName: string;
+  email: string;
+  mobileNumber: string;
   password: string | null;
-  isVerified?: boolean;
-  enabled?: boolean;
-  role?: "ROLE_USER" | "ROLE_ADMIN";
-  otp?: string | null;
-  otp_expiry?: Date | number | null;
-  temprory_phone?: string | null;
+  isVerified: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }

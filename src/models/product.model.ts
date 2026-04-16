@@ -41,18 +41,18 @@ Product.init(
     },
     created_at: {
       type: DataTypes.DATE,
-      allowNull: false, 
+      allowNull: false,
     },
     updated_at: {
       type: DataTypes.DATE,
-      allowNull: false, 
+      allowNull: false,
     },
 
   },
   {
     sequelize,
     tableName: "products",
-    timestamps: true,
+    timestamps: false,
   }
 );
 

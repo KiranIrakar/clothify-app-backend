@@ -20,7 +20,6 @@ class ProductService {
 
     const cleanName = name.trim();
 
-    // 🔥 CASE INSENSITIVE CHECK (small + BIG letters)
     const existingProduct = await Product.findOne({
       where: {
         name: {
@@ -56,7 +55,7 @@ class ProductService {
     });
   }
 
-  // ✅ GET ALL
+
   async getProducts(filters: any) {
     const where: any = {};
 
@@ -77,7 +76,7 @@ class ProductService {
     return { data: rows,  total: count, page, };
   }
 
-  // ✅ GET BY ID
+
   async getProductById(id: string) {
     const product = await Product.findByPk(id);
 
@@ -88,7 +87,7 @@ class ProductService {
     return product;
   }
 
-  // ✅ UPDATE
+ 
  async updateProduct(id: string, data: any) {
   const product = await Product.findByPk(id);
 
@@ -99,7 +98,6 @@ class ProductService {
   let image_url = product.image_url;
   let public_id = product.public_id;
 
-  // ✅ ONLY run if image is provided
   if (data.fileBuffer) {
     if (public_id) {
       await deleteFromCloudinary(public_id);
@@ -126,7 +124,8 @@ class ProductService {
 
   return await product.update(updateData);
 }
-  // ✅ DELETE
+ 
+
   async deleteProduct(id: string) {
     const product = await Product.findByPk(id);
 

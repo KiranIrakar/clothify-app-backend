@@ -1,10 +1,12 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import userService from "../services/user-profile.service";
-import { CreateUserRequest } from "../interface/createuserrequest.interface";
+import {
+  UserProfileCreationAttributes,
+} from "../interface/user-profile.interface";
 
 class UserProfileController {
   async createUser(
-    req: FastifyRequest<{ Body: CreateUserRequest }>,
+    req: FastifyRequest<{ Body: UserProfileCreationAttributes }>,
     reply: FastifyReply
   ) {
     try {
@@ -57,7 +59,7 @@ class UserProfileController {
   async updateUser(
     req: FastifyRequest<{
       Params: { id: string };
-      Body: CreateUserRequest;
+      Body: UserProfileCreationAttributes;
     }>,
     reply: FastifyReply
   ) {

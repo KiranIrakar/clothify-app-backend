@@ -5,7 +5,6 @@ import { validate as isUUID } from "uuid";
 class ProductController {
   constructor(private productService: ProductService) { }
 
-  // ✅ CREATE (MULTIPART ONLY)
   createProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const file = await (req as any).file();
@@ -43,7 +42,6 @@ class ProductController {
     }
   };
 
-  // ✅ GET ALL
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const query: any = req.query;
@@ -62,7 +60,6 @@ class ProductController {
     }
   };
 
-  // ✅ GET BY ID
   getProductById = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id }: any = req.params;
@@ -85,7 +82,7 @@ class ProductController {
     }
   };
 
- updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
   try {
     const { id }: any = req.params;
 
@@ -96,42 +93,42 @@ class ProductController {
       });
     }
 
-    let file: any = null;
     let buffer: Buffer | null = null;
-    let fields: any = {};
 
-    try {
-      file = await (req as any).file();
+    const fields: any = {};
 
-      if (file) {
-        buffer = await file.toBuffer();
-        fields = file.fields || {};
+    for await (const part of (req as any).parts()) {
+      if (part.file) {
+        buffer = await part.toBuffer();
+      } else {
+        fields[part.fieldname] = part.value;
       }
-    } catch (err) {
-      // no file sent → totally OK
     }
 
     const payload = {
-      name: fields?.name?.value,
-      price: fields?.price?.value,
-      stock: fields?.stock?.value,
-      description: fields?.description?.value,
-      category: fields?.category?.value,
-      fileBuffer: buffer, // ✅ optional image
+      name: fields.name,
+      price: fields.price,
+      stock: fields.stock,
+      description: fields.description,
+      category: fields.category,
+      fileBuffer: buffer,
     };
 
     const product = await this.productService.updateProduct(id, payload);
 
-    reply.send({ success: true, data: product });
+    reply.send({
+      success: true,
+      message: "Product updated successfully",
+      data: product,
+    });
   } catch (error: any) {
     reply.status(error.statusCode || 500).send({
       success: false,
-      message: error.message,
+      message: error.message || "Update failed",
     });
   }
 };
 
-  // ✅ DELETE
   deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id }: any = req.params;

@@ -1,29 +1,29 @@
-ALTER TABLE `products` ADD COLUMN `brand` VARCHAR(255);
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS brand VARCHAR(255);
 
-ALTER TABLE `products` ADD COLUMN `imageUrls` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS "imageUrls" JSON;
 
-ALTER TABLE `products` ADD COLUMN `mrp` FLOAT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS mrp FLOAT;
 
-ALTER TABLE `products` ADD COLUMN `discountPercent` INT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS "discountPercent" INT;
 
-ALTER TABLE `products` ADD COLUMN `currency` VARCHAR(10) DEFAULT 'INR';
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS currency VARCHAR(10) DEFAULT 'INR';
 
-ALTER TABLE `products` ADD COLUMN `rating` FLOAT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS rating FLOAT;
 
-ALTER TABLE `products` ADD COLUMN `ratingCount` INT;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS "ratingCount" INT;
 
-ALTER TABLE `products` ADD COLUMN `offers` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS offers JSON;
 
-ALTER TABLE `products` ADD COLUMN `colors` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS colors JSON;
 
-ALTER TABLE `products` ADD COLUMN `sizes` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS sizes JSON;
 
-ALTER TABLE `products` ADD COLUMN `delivery` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS delivery JSON;
 
-ALTER TABLE `products` ADD COLUMN `topReview` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS "topReview" JSON;
 
-ALTER TABLE `products` ADD COLUMN `store` JSON;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS store JSON;
 
-ALTER TABLE `products` ADD COLUMN `isWishlisted` BOOLEAN DEFAULT FALSE;
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS "isWishlisted" BOOLEAN DEFAULT FALSE;
 
-ALTER TABLE `products` ADD COLUMN `shareUrl` VARCHAR(255);
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS "shareUrl" VARCHAR(255);

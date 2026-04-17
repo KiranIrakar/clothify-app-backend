@@ -4,13 +4,14 @@ import sequelize from "../config/db";
 class Product extends Model {
   public id!: string;
   public name!: string;
+  public brand!: string;
   public price!: number;
-  public description!: string;
-  public image_url!: string;
-  public public_id!: string;
+  public mrp!: number;
+  public currency!: string;
+  public rating!: number;
+  public rating_count!: number;
   public created_at!: Date;
   public updated_at!: Date;
-
 }
 
 Product.init(
@@ -20,34 +21,51 @@ Product.init(
       primaryKey: true,
       defaultValue: DataTypes.UUIDV4,
     },
+
     name: {
       type: DataTypes.STRING,
       allowNull: false,
     },
+
+    brand: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
     price: {
       type: DataTypes.FLOAT,
       allowNull: false,
     },
-    description: {
-      type: DataTypes.STRING,
-    },
-    image_url: {
-      type: DataTypes.TEXT,
+
+    mrp: {
+      type: DataTypes.FLOAT,
       allowNull: true,
     },
-    public_id: {
+
+    currency: {
       type: DataTypes.STRING,
-      allowNull: true,
+      defaultValue: "INR",
     },
+
+    rating: {
+      type: DataTypes.FLOAT,
+      defaultValue: 0,
+    },
+
+    rating_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
+
     created_at: {
       type: DataTypes.DATE,
       allowNull: false,
     },
+
     updated_at: {
       type: DataTypes.DATE,
       allowNull: false,
     },
-
   },
   {
     sequelize,

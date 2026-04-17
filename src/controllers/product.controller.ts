@@ -5,39 +5,64 @@ import { validate as isUUID } from "uuid";
 class ProductController {
   constructor(private productService: ProductService) { }
 
+  getProductById = async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id }: any = req.params;
+
+      const product = await this.productService.getProductById(id);
+
+      return reply.send({
+        success: true,
+        message: "Product fetched successfully",
+        data: product,
+      });
+    } catch (error: any) {
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message: error.message || "Error fetching product",
+      });
+    }
+  };
+
   createProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const file = await (req as any).file();
 
-      if (!file) {
-        return reply.status(400).send({
-          success: false,
-          message: "Image file is required",
-        });
-      }
+      const fields = file?.fields || {};
+      const buffer = file ? await file.toBuffer() : null;
 
-      const { name, price, stock, description, category }: any = file.fields;
+      const payload = {
+        name: fields.name?.value,
+        brand: fields.brand?.value,
+        price: Number(fields.price?.value),
+        mrp: Number(fields.mrp?.value),
 
-      const buffer = await file.toBuffer();
+        colors: fields.colors?.value
+          ? JSON.parse(fields.colors.value)
+          : [],
 
-      const product = await this.productService.createProduct({
-        name: name.value,
-        price: Number(price.value),
-        stock: Number(stock?.value || 0),
-        description: description?.value,
-        category: category?.value,
+        sizes: fields.sizes?.value
+          ? JSON.parse(fields.sizes.value)
+          : [],
+
+        offers: fields.offers?.value
+          ? JSON.parse(fields.offers.value)
+          : [],
+
         fileBuffer: buffer,
-      });
+      };
 
-      reply.send({
+      const product = await this.productService.createFullProduct(payload);
+
+      return reply.send({
         success: true,
         message: "Product created successfully",
         data: product,
       });
     } catch (error: any) {
-      reply.status(error.statusCode || 500).send({
+      return reply.status(error.statusCode || 500).send({
         success: false,
-        message: error.message || "Error creating product",
+        message: error.message,
       });
     }
   };
@@ -60,96 +85,76 @@ class ProductController {
     }
   };
 
-  getProductById = async (req: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id }: any = req.params;
 
-      if (!id || !isUUID(id)) {
-        return reply.status(400).send({
-          success: false,
-          message: "Invalid UUID",
-        });
-      }
 
-      const product = await this.productService.getProductById(id);
+  // updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+  //   try {
+  //     const { id }: any = req.params;
 
-      reply.send({ success: true, data: product });
-    } catch (error: any) {
-      reply.status(error.statusCode || 500).send({
-        success: false,
-        message: error.message,
-      });
-    }
-  };
+  //     if (!id || !isUUID(id)) {
+  //       return reply.status(400).send({
+  //         success: false,
+  //         message: "Invalid UUID",
+  //       });
+  //     }
 
-updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
-  try {
-    const { id }: any = req.params;
+  //     let buffer: Buffer | null = null;
 
-    if (!id || !isUUID(id)) {
-      return reply.status(400).send({
-        success: false,
-        message: "Invalid UUID",
-      });
-    }
+  //     const fields: any = {};
 
-    let buffer: Buffer | null = null;
+  //     for await (const part of (req as any).parts()) {
+  //       if (part.file) {
+  //         buffer = await part.toBuffer();
+  //       } else {
+  //         fields[part.fieldname] = part.value;
+  //       }
+  //     }
 
-    const fields: any = {};
+  //     const payload = {
+  //       name: fields.name,
+  //       price: fields.price,
+  //       stock: fields.stock,
+  //       description: fields.description,
+  //       category: fields.category,
+  //       fileBuffer: buffer,
+  //     };
 
-    for await (const part of (req as any).parts()) {
-      if (part.file) {
-        buffer = await part.toBuffer();
-      } else {
-        fields[part.fieldname] = part.value;
-      }
-    }
+  //     const product = await this.productService.updateProduct(id, payload);
 
-    const payload = {
-      name: fields.name,
-      price: fields.price,
-      stock: fields.stock,
-      description: fields.description,
-      category: fields.category,
-      fileBuffer: buffer,
-    };
+  //     reply.send({
+  //       success: true,
+  //       message: "Product updated successfully",
+  //       data: product,
+  //     });
+  //   } catch (error: any) {
+  //     reply.status(error.statusCode || 500).send({
+  //       success: false,
+  //       message: error.message || "Update failed",
+  //     });
+  //   }
+  // };
 
-    const product = await this.productService.updateProduct(id, payload);
+  // deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+  //   try {
+  //     const { id }: any = req.params;
 
-    reply.send({
-      success: true,
-      message: "Product updated successfully",
-      data: product,
-    });
-  } catch (error: any) {
-    reply.status(error.statusCode || 500).send({
-      success: false,
-      message: error.message || "Update failed",
-    });
-  }
-};
+  //     if (!id || !isUUID(id)) {
+  //       return reply.status(400).send({
+  //         success: false,
+  //         message: "Invalid UUID",
+  //       });
+  //     }
 
-  deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id }: any = req.params;
+  //     const result = await this.productService.deleteProduct(id);
 
-      if (!id || !isUUID(id)) {
-        return reply.status(400).send({
-          success: false,
-          message: "Invalid UUID",
-        });
-      }
-
-      const result = await this.productService.deleteProduct(id);
-
-      reply.send({ success: true, ...result });
-    } catch (error: any) {
-      reply.status(error.statusCode || 500).send({
-        success: false,
-        message: error.message,
-      });
-    }
-  };
+  //     reply.send({ success: true, ...result });
+  //   } catch (error: any) {
+  //     reply.status(error.statusCode || 500).send({
+  //       success: false,
+  //       message: error.message,
+  //     });
+  //   }
+  // };
 }
 
 export default ProductController;

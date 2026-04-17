@@ -298,8 +298,8 @@ class ProductService {
       rating: p.rating,
       ratingCount: p.rating_count,
       imageUrls: p.images?.map((img: any) => img.url) || [],
-      createdAt: p.created_at,
-      updatedAt: p.updated_at,
+      created_at: p.created_at,
+      updated_at: p.updated_at,
     }));
 
     return {

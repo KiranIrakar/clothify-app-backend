@@ -46,6 +46,15 @@ Product.init(
       type: DataTypes.STRING,
       defaultValue: "INR",
     },
+    store_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+      references: {
+        model: "stores",
+        key: "id",
+      },
+      onDelete: "SET NULL",
+    },
 
     rating: {
       type: DataTypes.FLOAT,

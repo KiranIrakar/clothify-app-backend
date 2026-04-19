@@ -17,6 +17,7 @@ class ProductController {
         brand: fields.brand?.value,
         price: Number(fields.price?.value),
         mrp: Number(fields.mrp?.value),
+        store_id: fields.store_id?.value,
 
         colors: fields.colors?.value
           ? JSON.parse(fields.colors.value)

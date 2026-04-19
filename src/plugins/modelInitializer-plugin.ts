@@ -4,6 +4,8 @@ import ProductReview from "../models/product-review-model";
 import ProductColor from "../models/product-colors-model";
 import ProductSize from "../models/product-sizes-model";
 import ProductOffer from "../models/product-offers-model";
+import Wishlist from "../models/wishlist.model";
+import Store from "../models/store.model";
 
 export const initModels = () => {
 
@@ -69,5 +71,29 @@ export const initModels = () => {
     foreignKey: "product_id",
     as: "product",
   });
+
+  // Product → Wishlist
+  Product.hasMany(Wishlist, {
+    foreignKey: "product_id",
+    as: "wishlists",
+  });
+
+  // Wishlist → Product
+  Wishlist.belongsTo(Product, {
+    foreignKey: "product_id",
+    as: "product",
+  });
+
+  // Product → Store
+  Product.belongsTo(Store, {
+    foreignKey: "store_id",
+    as: "store",
+  });
+
+  // Store → Products
+  Store.hasMany(Product, {
+    foreignKey: "store_id",
+  });
+
 
 };

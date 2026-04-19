@@ -6,6 +6,7 @@ import ProductColor from "../models/product-colors-model";
 import ProductSize from "../models/product-sizes-model";
 import ProductOffer from "../models/product-offers-model";
 import { uploadToCloudinary, deleteFromCloudinary, } from "../utils/cloudinaty.utils";
+import Store from "../models/store.model";
 class ProductService {
 
   async createFullProduct(data: any) {
@@ -14,6 +15,7 @@ class ProductService {
       brand,
       price,
       mrp,
+      store_id,
       colors,
       sizes,
       offers,
@@ -54,11 +56,23 @@ class ProductService {
       public_id = upload.public_id;
     }
 
+    if (store_id) {
+      const store = await Store.findByPk(store_id);
+
+      if (!store) {
+        throw {
+          statusCode: 400,
+          message: "Invalid store_id",
+        };
+      }
+    }
+
     const product = await Product.create({
       name,
       brand,
       price,
       mrp,
+      store_id: store_id,
       currency: "INR",
       rating: 0,
       rating_count: 0,
@@ -306,135 +320,135 @@ class ProductService {
     };
   }
 
-async updateFullProduct(id: string, data: any) {
-  const {
-    name,
-    brand,
-    price,
-    mrp,
-    colors,
-    sizes,
-    offers,
-    fileBuffer,
-  } = data;
+  async updateFullProduct(id: string, data: any) {
+    const {
+      name,
+      brand,
+      price,
+      mrp,
+      colors,
+      sizes,
+      offers,
+      fileBuffer,
+    } = data;
 
-  const product = await Product.findByPk(id);
+    const product = await Product.findByPk(id);
 
-  if (!product) {
-    throw { statusCode: 404, message: "Product not found" };
-  }
+    if (!product) {
+      throw { statusCode: 404, message: "Product not found" };
+    }
 
-  // ---------------------------
-  // DUPLICATE NAME CHECK
-  // ---------------------------
-  if (name !== undefined) {
-    const existing = await Product.findOne({
-      where: {
-        name: {
-          [Op.iLike]: name.trim(),
+    // ---------------------------
+    // DUPLICATE NAME CHECK
+    // ---------------------------
+    if (name !== undefined) {
+      const existing = await Product.findOne({
+        where: {
+          name: {
+            [Op.iLike]: name.trim(),
+          },
+          id: { [Op.ne]: id },
         },
-        id: { [Op.ne]: id },
-      },
-    });
+      });
 
-    if (existing) {
-      throw {
-        statusCode: 409,
-        message: "Product name already exists",
-      };
+      if (existing) {
+        throw {
+          statusCode: 409,
+          message: "Product name already exists",
+        };
+      }
     }
-  }
 
-  // ---------------------------
-  // IMAGE (OPTIONAL ✅)
-  // ---------------------------
-  let image_url = (product as any).image_url;
-  let public_id = (product as any).public_id;
+    // ---------------------------
+    // IMAGE (OPTIONAL ✅)
+    // ---------------------------
+    let image_url = (product as any).image_url;
+    let public_id = (product as any).public_id;
 
-  if (fileBuffer) {
-    // 🔥 only replace if new image provided
-    await ProductImage.destroy({ where: { product_id: id } });
+    if (fileBuffer) {
+      // 🔥 only replace if new image provided
+      await ProductImage.destroy({ where: { product_id: id } });
 
-    const upload: any = await uploadToCloudinary(fileBuffer);
+      const upload: any = await uploadToCloudinary(fileBuffer);
 
-    image_url = upload.secure_url;
-    public_id = upload.public_id;
+      image_url = upload.secure_url;
+      public_id = upload.public_id;
 
-    await ProductImage.create({
-      product_id: id,
-      url: image_url,
+      await ProductImage.create({
+        product_id: id,
+        url: image_url,
+        public_id,
+      });
+    }
+
+    // ---------------------------
+    // UPDATE PRODUCT (SAFE ✅)
+    // ---------------------------
+    await product.update({
+      name: name !== undefined ? name : product.name,
+      brand: brand !== undefined ? brand : product.brand,
+      price: price !== undefined ? price : product.price,
+      mrp: mrp !== undefined ? mrp : product.mrp,
+      image_url,
       public_id,
+      updated_at: new Date(),
     });
-  }
 
-  // ---------------------------
-  // UPDATE PRODUCT (SAFE ✅)
-  // ---------------------------
-  await product.update({
-    name: name !== undefined ? name : product.name,
-    brand: brand !== undefined ? brand : product.brand,
-    price: price !== undefined ? price : product.price,
-    mrp: mrp !== undefined ? mrp : product.mrp,
-    image_url,
-    public_id,
-    updated_at: new Date(),
-  });
+    // ---------------------------
+    // COLORS (ONLY IF SENT)
+    // ---------------------------
+    if (colors !== undefined) {
+      await ProductColor.destroy({ where: { product_id: id } });
 
-  // ---------------------------
-  // COLORS (ONLY IF SENT)
-  // ---------------------------
-  if (colors !== undefined) {
-    await ProductColor.destroy({ where: { product_id: id } });
-
-    if (colors.length) {
-      await ProductColor.bulkCreate(
-        colors.map((c: any) => ({
-          product_id: id,
-          name: c.name,
-          hex_code: c.hexCode,
-        }))
-      );
+      if (colors.length) {
+        await ProductColor.bulkCreate(
+          colors.map((c: any) => ({
+            product_id: id,
+            name: c.name,
+            hex_code: c.hexCode,
+          }))
+        );
+      }
     }
-  }
 
-  // ---------------------------
-  // SIZES (ONLY IF SENT)
-  // ---------------------------
-  if (sizes !== undefined) {
-    await ProductSize.destroy({ where: { product_id: id } });
+    // ---------------------------
+    // SIZES (ONLY IF SENT)
+    // ---------------------------
+    if (sizes !== undefined) {
+      await ProductSize.destroy({ where: { product_id: id } });
 
-    if (sizes.length) {
-      await ProductSize.bulkCreate(
-        sizes.map((s: any) => ({
-          product_id: id,
-          label: s.label,
-          is_available: true,
-        }))
-      );
+      if (sizes.length) {
+        await ProductSize.bulkCreate(
+          sizes.map((s: any) => ({
+            product_id: id,
+            label: s.label,
+            is_available: true,
+          }))
+        );
+      }
     }
-  }
 
-  // ---------------------------
-  // OFFERS (ONLY IF SENT)
-  // ---------------------------
-  if (offers !== undefined) {
-    await ProductOffer.destroy({ where: { product_id: id } });
+    // ---------------------------
+    // OFFERS (ONLY IF SENT)
+    // ---------------------------
+    if (offers !== undefined) {
+      await ProductOffer.destroy({ where: { product_id: id } });
 
-    if (offers.length) {
-      await ProductOffer.bulkCreate(
-        offers.map((o: any) => ({
-          product_id: id,
-          title: o.title,
-          description: o.description,
-          type: o.type,
-          action_text: o.action_text,
-        }))
-      );
+      if (offers.length) {
+        await ProductOffer.bulkCreate(
+          offers.map((o: any) => ({
+            product_id: id,
+            title: o.title,
+            description: o.description,
+            type: o.type,
+            action_text: o.action_text,
+          }))
+        );
+      }
     }
-  }
 
-  return await this.getProductById(id);
-}
+    return await this.getProductById(id);
+  }
 }
 
 export default ProductService;

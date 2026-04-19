@@ -8,6 +8,112 @@ import ProductOffer from "../models/product-offers-model";
 import { uploadToCloudinary, deleteFromCloudinary, } from "../utils/cloudinaty.utils";
 class ProductService {
 
+  async createFullProduct(data: any) {
+    const {
+      name,
+      brand,
+      price,
+      mrp,
+      colors,
+      sizes,
+      offers,
+      fileBuffer,
+    } = data;
+
+    if (!name || name.trim().length < 2) {
+      throw { statusCode: 400, message: "Invalid name" };
+    }
+
+    if (!price || price <= 0) {
+      throw { statusCode: 400, message: "Invalid price" };
+    }
+
+    const cleanName = name.trim();
+
+    const existingProduct = await Product.findOne({
+      where: {
+        name: {
+          [Op.iLike]: cleanName,
+        },
+      },
+    });
+
+    if (existingProduct) {
+      throw {
+        statusCode: 409,
+        message: `Product already exists: ${cleanName}`,
+      };
+    }
+
+    let image_url = null;
+    let public_id = null;
+
+    if (fileBuffer) {
+      const upload: any = await uploadToCloudinary(fileBuffer);
+      image_url = upload.secure_url;
+      public_id = upload.public_id;
+    }
+
+    const product = await Product.create({
+      name,
+      brand,
+      price,
+      mrp,
+      currency: "INR",
+      rating: 0,
+      rating_count: 0,
+      image_url,
+      public_id,
+      created_at: new Date(),
+      updated_at: new Date(),
+    });
+
+    const productId = product.id;
+
+
+    if (image_url) {
+      await ProductImage.create({
+        product_id: productId,
+        url: image_url,
+        public_id,
+      });
+    }
+
+    if (colors?.length) {
+      await ProductColor.bulkCreate(
+        colors.map((c: any) => ({
+          product_id: productId,
+          name: c.name,
+          hex_code: c.hexCode,
+        }))
+      );
+    }
+
+    if (sizes?.length) {
+      await ProductSize.bulkCreate(
+        sizes.map((s: any) => ({
+          product_id: productId,
+          label: s.label,
+          is_available: true,
+        }))
+      );
+    }
+
+    if (offers?.length) {
+      await ProductOffer.bulkCreate(
+        offers.map((o: any) => ({
+          product_id: productId,
+          title: o.title,
+          description: o.description,
+          type: o.type,
+          action_text: o.action_text,
+        }))
+      );
+    }
+
+    return product;
+  }
+
   async getProductById(id: string) {
     const product = await Product.findByPk(id, {
       include: [
@@ -102,133 +208,6 @@ class ProductService {
     };
   }
 
-
-  async createFullProduct(data: any) {
-    const {
-      name,
-      brand,
-      price,
-      mrp,
-      colors,
-      sizes,
-      offers,
-      fileBuffer,
-    } = data;
-
-    if (!name || name.trim().length < 2) {
-      throw { statusCode: 400, message: "Invalid name" };
-    }
-
-    if (!price || price <= 0) {
-      throw { statusCode: 400, message: "Invalid price" };
-    }
-
-    const cleanName = name.trim();
-
-    // ---------------------------
-    // DUPLICATE CHECK (BEFORE UPLOAD)
-    // ---------------------------
-    const existingProduct = await Product.findOne({
-      where: {
-        name: {
-          [Op.iLike]: cleanName,
-        },
-      },
-    });
-
-    if (existingProduct) {
-      throw {
-        statusCode: 409,
-        message: `Product already exists: ${cleanName}`,
-      };
-    }
-    // ---------------------------
-    // CLOUDINARY UPLOAD (MAIN IMAGE)
-    // ---------------------------
-    let image_url = null;
-    let public_id = null;
-
-    if (fileBuffer) {
-      const upload: any = await uploadToCloudinary(fileBuffer);
-      image_url = upload.secure_url;
-      public_id = upload.public_id;
-    }
-
-
-    // ---------------------------
-    // CREATE PRODUCT
-    // ---------------------------
-    const product = await Product.create({
-      name,
-      brand,
-      price,
-      mrp,
-      currency: "INR",
-      rating: 0,
-      rating_count: 0,
-      image_url,
-      public_id,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
-    const productId = product.id;
-
-    // ---------------------------
-    // IMAGES (OPTIONAL MULTIPLE)
-    // ---------------------------
-    if (image_url) {
-      await ProductImage.create({
-        product_id: productId,
-        url: image_url,
-        public_id,
-      });
-    }
-
-    // ---------------------------
-    // COLORS
-    // ---------------------------
-    if (colors?.length) {
-      await ProductColor.bulkCreate(
-        colors.map((c: any) => ({
-          product_id: productId,
-          name: c.name,
-          hex_code: c.hexCode,
-        }))
-      );
-    }
-
-    // ---------------------------
-    // SIZES
-    // ---------------------------
-    if (sizes?.length) {
-      await ProductSize.bulkCreate(
-        sizes.map((s: any) => ({
-          product_id: productId,
-          label: s.label,
-          is_available: true,
-        }))
-      );
-    }
-
-    // ---------------------------
-    // OFFERS
-    // ---------------------------
-    if (offers?.length) {
-      await ProductOffer.bulkCreate(
-        offers.map((o: any) => ({
-          product_id: productId,
-          title: o.title,
-          description: o.description,
-          type: o.type,
-          action_text: o.action_text,
-        }))
-      );
-    }
-
-    return product;
-  }
-
   async getProducts(filters: any) {
     const where: any = {};
 
@@ -310,59 +289,152 @@ class ProductService {
     };
   }
 
-  // async updateProduct(id: string, data: any) {
-  //   const product = await Product.findByPk(id);
+  async deleteProduct(id: string) {
+    const product = await Product.findByPk(id);
 
-  //   if (!product) {
-  //     throw { statusCode: 404, message: "Product not found" };
-  //   }
+    if (!product) {
+      throw {
+        statusCode: 404,
+        message: "Product not found",
+      };
+    }
 
-  //   let image_url = product.image_url;
-  //   let public_id = product.public_id;
+    await product.destroy();
 
-  //   if (data.fileBuffer) {
-  //     if (public_id) {
-  //       await deleteFromCloudinary(public_id);
-  //     }
+    return {
+      message: "Product deleted successfully",
+    };
+  }
 
-  //     const upload: any = await uploadToCloudinary(data.fileBuffer);
+async updateFullProduct(id: string, data: any) {
+  const {
+    name,
+    brand,
+    price,
+    mrp,
+    colors,
+    sizes,
+    offers,
+    fileBuffer,
+  } = data;
 
-  //     image_url = upload.secure_url;
-  //     public_id = upload.public_id;
-  //   }
+  const product = await Product.findByPk(id);
 
-  //   const updateData: any = {
-  //     updated_at: new Date(),
-  //   };
+  if (!product) {
+    throw { statusCode: 404, message: "Product not found" };
+  }
 
-  //   if (data.name !== undefined) updateData.name = data.name;
-  //   if (data.price !== undefined) updateData.price = data.price;
-  //   if (data.stock !== undefined) updateData.stock = data.stock;
-  //   if (data.description !== undefined) updateData.description = data.description;
-  //   if (data.category !== undefined) updateData.category = data.category;
+  // ---------------------------
+  // DUPLICATE NAME CHECK
+  // ---------------------------
+  if (name !== undefined) {
+    const existing = await Product.findOne({
+      where: {
+        name: {
+          [Op.iLike]: name.trim(),
+        },
+        id: { [Op.ne]: id },
+      },
+    });
 
-  //   updateData.image_url = image_url;
-  //   updateData.public_id = public_id;
+    if (existing) {
+      throw {
+        statusCode: 409,
+        message: "Product name already exists",
+      };
+    }
+  }
 
-  //   return await product.update(updateData);
-  // }
+  // ---------------------------
+  // IMAGE (OPTIONAL ✅)
+  // ---------------------------
+  let image_url = (product as any).image_url;
+  let public_id = (product as any).public_id;
 
+  if (fileBuffer) {
+    // 🔥 only replace if new image provided
+    await ProductImage.destroy({ where: { product_id: id } });
 
-  // async deleteProduct(id: string) {
-  //   const product = await Product.findByPk(id);
+    const upload: any = await uploadToCloudinary(fileBuffer);
 
-  //   if (!product) {
-  //     throw { statusCode: 404, message: "Product not found" };
-  //   }
+    image_url = upload.secure_url;
+    public_id = upload.public_id;
 
-  //   if (product.public_id) {
-  //     await deleteFromCloudinary(product.public_id);
-  //   }
+    await ProductImage.create({
+      product_id: id,
+      url: image_url,
+      public_id,
+    });
+  }
 
-  //   await product.destroy();
+  // ---------------------------
+  // UPDATE PRODUCT (SAFE ✅)
+  // ---------------------------
+  await product.update({
+    name: name !== undefined ? name : product.name,
+    brand: brand !== undefined ? brand : product.brand,
+    price: price !== undefined ? price : product.price,
+    mrp: mrp !== undefined ? mrp : product.mrp,
+    image_url,
+    public_id,
+    updated_at: new Date(),
+  });
 
-  //   return { message: "Product deleted successfully" };
-  // }
+  // ---------------------------
+  // COLORS (ONLY IF SENT)
+  // ---------------------------
+  if (colors !== undefined) {
+    await ProductColor.destroy({ where: { product_id: id } });
+
+    if (colors.length) {
+      await ProductColor.bulkCreate(
+        colors.map((c: any) => ({
+          product_id: id,
+          name: c.name,
+          hex_code: c.hexCode,
+        }))
+      );
+    }
+  }
+
+  // ---------------------------
+  // SIZES (ONLY IF SENT)
+  // ---------------------------
+  if (sizes !== undefined) {
+    await ProductSize.destroy({ where: { product_id: id } });
+
+    if (sizes.length) {
+      await ProductSize.bulkCreate(
+        sizes.map((s: any) => ({
+          product_id: id,
+          label: s.label,
+          is_available: true,
+        }))
+      );
+    }
+  }
+
+  // ---------------------------
+  // OFFERS (ONLY IF SENT)
+  // ---------------------------
+  if (offers !== undefined) {
+    await ProductOffer.destroy({ where: { product_id: id } });
+
+    if (offers.length) {
+      await ProductOffer.bulkCreate(
+        offers.map((o: any) => ({
+          product_id: id,
+          title: o.title,
+          description: o.description,
+          type: o.type,
+          action_text: o.action_text,
+        }))
+      );
+    }
+  }
+
+  return await this.getProductById(id);
+}
 }
 
 export default ProductService;

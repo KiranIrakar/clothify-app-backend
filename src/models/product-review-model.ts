@@ -47,6 +47,8 @@ ProductReview.init(
       type: DataTypes.TEXT,
       allowNull: true,
     },
+    
+
   },
   {
     sequelize,

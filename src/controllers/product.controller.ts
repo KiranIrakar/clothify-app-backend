@@ -5,25 +5,6 @@ import { validate as isUUID } from "uuid";
 class ProductController {
   constructor(private productService: ProductService) { }
 
-  getProductById = async (req: FastifyRequest, reply: FastifyReply) => {
-    try {
-      const { id }: any = req.params;
-
-      const product = await this.productService.getProductById(id);
-
-      return reply.send({
-        success: true,
-        message: "Product fetched successfully",
-        data: product,
-      });
-    } catch (error: any) {
-      return reply.status(error.statusCode || 500).send({
-        success: false,
-        message: error.message || "Error fetching product",
-      });
-    }
-  };
-
   createProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const file = await (req as any).file();
@@ -67,6 +48,27 @@ class ProductController {
     }
   };
 
+
+  getProductById = async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id }: any = req.params;
+
+      const product = await this.productService.getProductById(id);
+
+      return reply.send({
+        success: true,
+        message: "Product fetched successfully",
+        data: product,
+      });
+    } catch (error: any) {
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message: error.message || "Error fetching product",
+      });
+    }
+  };
+
+
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const query: any = req.query;
@@ -86,8 +88,32 @@ class ProductController {
   };
 
 
+  deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      const { id }: any = req.params;
 
-  // updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+      if (!id || !isUUID(id)) {
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid UUID",
+        });
+      }
+
+      const result = await this.productService.deleteProduct(id);
+
+      return reply.send({
+        success: true,
+        ...result,
+      });
+    } catch (error: any) {
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message: error.message,
+      });
+    }
+  };
+
+
   //   try {
   //     const { id }: any = req.params;
 
@@ -155,6 +181,72 @@ class ProductController {
   //     });
   //   }
   // };
+
+ updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
+  try {
+    const { id }: any = req.params;
+
+    let file = null;
+
+    // ✅ file optional handling
+    try {
+      file = await (req as any).file();
+    } catch {
+      file = null;
+    }
+
+    // ✅ fields from multipart OR JSON
+    const fields = file?.fields || (req.body as any) || {};
+
+    const buffer = file ? await file.toBuffer() : null;
+
+    const product = await this.productService.updateFullProduct(id, {
+      name: fields.name?.value || fields.name,
+      brand: fields.brand?.value || fields.brand,
+
+      price:
+        fields.price !== undefined
+          ? Number(fields.price.value || fields.price)
+          : undefined,
+
+      mrp:
+        fields.mrp !== undefined
+          ? Number(fields.mrp.value || fields.mrp)
+          : undefined,
+
+      colors:
+        fields.colors !== undefined
+          ? JSON.parse(fields.colors.value || fields.colors)
+          : undefined,
+
+      sizes:
+        fields.sizes !== undefined
+          ? JSON.parse(fields.sizes.value || fields.sizes)
+          : undefined,
+
+      offers:
+        fields.offers !== undefined
+          ? JSON.parse(fields.offers.value || fields.offers)
+          : undefined,
+
+      fileBuffer: buffer,
+    });
+
+    return reply.send({
+      success: true,
+      message: "Product updated successfully",
+      data: product,
+    });
+  } catch (error: any) {
+    console.error(error);
+
+    return reply.status(error.statusCode || 500).send({
+      success: false,
+      message: error.message || "Update failed",
+    });
+  }
+};
+
 }
 
 export default ProductController;

@@ -6,6 +6,7 @@ import productRoutes from "./src/routes/product.route";
 import sequelize from "./src/config/db"; 
 import fastifyMultipart from "@fastify/multipart";
 import userProfileRoutes from "./src/routes/user-profile.route";
+import reviewRoutes from "./src/routes/reviews.route";
 // import logger from "./src/config/logger";
 
 dotenv.config();
@@ -39,3 +40,4 @@ app.register(fastifyMultipart, {
 app.register(authRoutes, { prefix: "/auth" });
 app.register(productRoutes, { prefix: "/products" });
 app.register(userProfileRoutes, { prefix: "/user-profile" });
+app.register(reviewRoutes, { prefix: "/reviews" });

@@ -13,6 +13,6 @@ export default async function productRoutes(app: FastifyInstance) {
   app.post("/", productController.createProduct);
   app.get("/", productController.getAllProduct);
   app.get("/product/:id", productController.getProductById);
-  // app.put("/product/:id", productController.updateProduct);
-  // app.delete("/product/:id", productController.deleteProduct);
+  app.put("/product/:id", productController.updateProduct);
+  app.delete("/product/:id", productController.deleteProduct);
 }

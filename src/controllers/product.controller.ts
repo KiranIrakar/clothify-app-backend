@@ -15,9 +15,24 @@ class ProductController {
       const payload = {
         name: fields.name?.value,
         brand: fields.brand?.value,
-        price: Number(fields.price?.value),
-        mrp: Number(fields.mrp?.value),
+
+        price: fields.price?.value
+          ? Number(fields.price.value)
+          : undefined,
+
+        mrp: fields.mrp?.value
+          ? Number(fields.mrp.value)
+          : undefined,
+
         store_id: fields.store_id?.value,
+
+        // ✅ ADD THIS
+        category: fields.category?.value,
+
+        // ✅ ADD THIS
+        stock: fields.stock?.value
+          ? Number(fields.stock.value)
+          : undefined,
 
         colors: fields.colors?.value
           ? JSON.parse(fields.colors.value)
@@ -33,7 +48,6 @@ class ProductController {
 
         fileBuffer: buffer,
       };
-
       const product = await this.productService.createFullProduct(payload);
 
       return reply.send({
@@ -73,12 +87,12 @@ class ProductController {
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const query: any = req.query;
-      const products = await this.productService.getProducts(query);
+      const products = await this.productService.getAllProducts(query);
 
       reply.send({
         success: true,
         message: "Products fetched successfully",
-        ...products,
+        data: products
       });
     } catch (error: any) {
       reply.status(500).send({
@@ -87,7 +101,6 @@ class ProductController {
       });
     }
   };
-
 
   deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
@@ -104,149 +117,102 @@ class ProductController {
 
       return reply.send({
         success: true,
-        ...result,
+        message: result.message,
       });
+
     } catch (error: any) {
       return reply.status(error.statusCode || 500).send({
         success: false,
-        message: error.message,
+        message: error.message || "Failed to delete product",
       });
     }
   };
 
-
-  //   try {
-  //     const { id }: any = req.params;
-
-  //     if (!id || !isUUID(id)) {
-  //       return reply.status(400).send({
-  //         success: false,
-  //         message: "Invalid UUID",
-  //       });
-  //     }
-
-  //     let buffer: Buffer | null = null;
-
-  //     const fields: any = {};
-
-  //     for await (const part of (req as any).parts()) {
-  //       if (part.file) {
-  //         buffer = await part.toBuffer();
-  //       } else {
-  //         fields[part.fieldname] = part.value;
-  //       }
-  //     }
-
-  //     const payload = {
-  //       name: fields.name,
-  //       price: fields.price,
-  //       stock: fields.stock,
-  //       description: fields.description,
-  //       category: fields.category,
-  //       fileBuffer: buffer,
-  //     };
-
-  //     const product = await this.productService.updateProduct(id, payload);
-
-  //     reply.send({
-  //       success: true,
-  //       message: "Product updated successfully",
-  //       data: product,
-  //     });
-  //   } catch (error: any) {
-  //     reply.status(error.statusCode || 500).send({
-  //       success: false,
-  //       message: error.message || "Update failed",
-  //     });
-  //   }
-  // };
-
-  // deleteProduct = async (req: FastifyRequest, reply: FastifyReply) => {
-  //   try {
-  //     const { id }: any = req.params;
-
-  //     if (!id || !isUUID(id)) {
-  //       return reply.status(400).send({
-  //         success: false,
-  //         message: "Invalid UUID",
-  //       });
-  //     }
-
-  //     const result = await this.productService.deleteProduct(id);
-
-  //     reply.send({ success: true, ...result });
-  //   } catch (error: any) {
-  //     reply.status(error.statusCode || 500).send({
-  //       success: false,
-  //       message: error.message,
-  //     });
-  //   }
-  // };
-
- updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
-  try {
-    const { id }: any = req.params;
-
-    let file = null;
-
-    // ✅ file optional handling
+  updateProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
-      file = await (req as any).file();
-    } catch {
-      file = null;
+      const { id }: any = req.params;
+
+      // ✅ UUID validation
+      if (!id || !isUUID(id)) {
+        return reply.status(400).send({
+          success: false,
+          message: "Invalid UUID",
+        });
+      }
+
+      let file = null;
+
+      // ✅ Handle optional file (multipart)
+      try {
+        file = await (req as any).file();
+      } catch {
+        file = null;
+      }
+
+      // ✅ Extract fields (multipart OR JSON)
+      const fields = file?.fields || (req.body as any) || {};
+
+      const buffer = file ? await file.toBuffer() : null;
+
+      // ✅ Call service
+      const product = await this.productService.updateFullProduct(id, {
+        name: fields.name?.value || fields.name,
+        brand: fields.brand?.value || fields.brand,
+
+        price:
+          fields.price !== undefined
+            ? Number(fields.price.value || fields.price)
+            : undefined,
+
+        mrp:
+          fields.mrp !== undefined
+            ? Number(fields.mrp.value || fields.mrp)
+            : undefined,
+
+        category:
+          fields.category !== undefined
+            ? fields.category.value || fields.category
+            : undefined,
+
+        stock:
+          fields.stock !== undefined
+            ? Number(fields.stock.value || fields.stock)
+            : undefined,
+
+        colors:
+          fields.colors !== undefined
+            ? JSON.parse(fields.colors.value || fields.colors)
+            : undefined,
+
+        sizes:
+          fields.sizes !== undefined
+            ? JSON.parse(fields.sizes.value || fields.sizes)
+            : undefined,
+
+        offers:
+          fields.offers !== undefined
+            ? JSON.parse(fields.offers.value || fields.offers)
+            : undefined,
+
+        fileBuffer: buffer,
+      });
+
+      // ✅ Success response
+      return reply.send({
+        success: true,
+        message: "Product updated successfully",
+        data: product,
+      });
+
+    } catch (error: any) {
+      console.error(error);
+
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message: error.message || "Update failed",
+      });
     }
-
-    // ✅ fields from multipart OR JSON
-    const fields = file?.fields || (req.body as any) || {};
-
-    const buffer = file ? await file.toBuffer() : null;
-
-    const product = await this.productService.updateFullProduct(id, {
-      name: fields.name?.value || fields.name,
-      brand: fields.brand?.value || fields.brand,
-
-      price:
-        fields.price !== undefined
-          ? Number(fields.price.value || fields.price)
-          : undefined,
-
-      mrp:
-        fields.mrp !== undefined
-          ? Number(fields.mrp.value || fields.mrp)
-          : undefined,
-
-      colors:
-        fields.colors !== undefined
-          ? JSON.parse(fields.colors.value || fields.colors)
-          : undefined,
-
-      sizes:
-        fields.sizes !== undefined
-          ? JSON.parse(fields.sizes.value || fields.sizes)
-          : undefined,
-
-      offers:
-        fields.offers !== undefined
-          ? JSON.parse(fields.offers.value || fields.offers)
-          : undefined,
-
-      fileBuffer: buffer,
-    });
-
-    return reply.send({
-      success: true,
-      message: "Product updated successfully",
-      data: product,
-    });
-  } catch (error: any) {
-    console.error(error);
-
-    return reply.status(error.statusCode || 500).send({
-      success: false,
-      message: error.message || "Update failed",
-    });
-  }
-};
+  };
 
 }
 

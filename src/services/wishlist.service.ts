@@ -4,9 +4,8 @@ import Store from "../models/store.model";
 
 class WishlistService {
 
-  //  GET WISHLIST
+  // ✅ GET WISHLIST (no change needed)
   async getWishlist(userId: string) {
-
     const items = await Wishlist.findAll({
       where: { user_id: userId },
       include: [
@@ -36,12 +35,17 @@ class WishlistService {
             lng: item.product.store.lng,
           }
         : null,
-
     }));
   }
 
-  //  ADD TO WISHLIST
+  // 🔥 ADD TO WISHLIST (UPDATED)
   async addToWishlist(userId: string, productId: string) {
+
+    // ✅ NEW: check product exists
+    const product = await Product.findByPk(productId);
+    if (!product) {
+      throw { statusCode: 404, message: "Product not found" };
+    }
 
     const existing = await Wishlist.findOne({
       where: { user_id: userId, product_id: productId },
@@ -59,11 +63,17 @@ class WishlistService {
     return { message: "Product added to wishlist" };
   }
 
-  //  REMOVE FROM WISHLIST
+  // 🔥 REMOVE FROM WISHLIST (UPDATED)
   async removeFromWishlist(userId: string, productId: string) {
-    await Wishlist.destroy({
+
+    const deleted = await Wishlist.destroy({
       where: { user_id: userId, product_id: productId },
     });
+
+    // ✅ NEW: handle not found
+    if (!deleted) {
+      throw { statusCode: 404, message: "Item not in wishlist" };
+    }
 
     return { message: "Product removed from wishlist" };
   }

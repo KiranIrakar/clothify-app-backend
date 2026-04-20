@@ -10,6 +10,9 @@ class Product extends Model {
   public currency!: string;
   public rating!: number;
   public rating_count!: number;
+  public store_id!: string;
+  public category!: string;
+  public stock!: number;
   public created_at!: Date;
   public updated_at!: Date;
 }
@@ -66,20 +69,24 @@ Product.init(
       defaultValue: 0,
     },
 
-    created_at: {
-      type: DataTypes.DATE,
+    category: {
+      type: DataTypes.STRING,
       allowNull: false,
     },
 
-    updated_at: {
-      type: DataTypes.DATE,
+    stock: {
+      type: DataTypes.INTEGER,
       allowNull: false,
+      defaultValue: 0,
     },
+
   },
   {
     sequelize,
     tableName: "products",
-    timestamps: false,
+    timestamps: true,
+    createdAt: "created_at",
+    updatedAt: "updated_at",
   }
 );
 

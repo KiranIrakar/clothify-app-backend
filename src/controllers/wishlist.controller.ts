@@ -2,7 +2,7 @@ import { FastifyRequest, FastifyReply } from "fastify";
 import WishlistService from "../services/wishlist.service";
 
 class WishlistController {
-  constructor(private wishlistService: WishlistService) {}
+  constructor(private wishlistService: WishlistService) { }
 
   // GET
   getWishlist = async (req: FastifyRequest, reply: FastifyReply) => {
@@ -17,9 +17,9 @@ class WishlistController {
         data,
       });
     } catch (error: any) {
-      return reply.status(500).send({
+      return reply.status(error.statusCode || 500).send({
         success: false,
-        message: "Failed to fetch wishlist",
+        message: error.message || "Something went wrong",
       });
     }
   };
@@ -40,9 +40,9 @@ class WishlistController {
         message: result.message,
       });
     } catch (error: any) {
-      return reply.status(500).send({
+      return reply.status(error.statusCode || 500).send({
         success: false,
-        message: error.message,
+        message: error.message || "Something went wrong",
       });
     }
   };
@@ -63,9 +63,9 @@ class WishlistController {
         message: result.message,
       });
     } catch (error: any) {
-      return reply.status(500).send({
+      return reply.status(error.statusCode || 500).send({
         success: false,
-        message: error.message,
+        message: error.message || "Something went wrong",
       });
     }
   };

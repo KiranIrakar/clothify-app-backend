@@ -7,125 +7,178 @@ import ProductSize from "../models/product-sizes-model";
 import ProductOffer from "../models/product-offers-model";
 import { uploadToCloudinary, deleteFromCloudinary, } from "../utils/cloudinaty.utils";
 import Store from "../models/store.model";
+import sequelize from "../config/db";
 class ProductService {
 
   async createFullProduct(data: any) {
-    const {
-      name,
-      brand,
-      price,
-      mrp,
-      store_id,
-      colors,
-      sizes,
-      offers,
-      fileBuffer,
-    } = data;
+    const transaction = await sequelize.transaction();
 
-    if (!name || name.trim().length < 2) {
-      throw { statusCode: 400, message: "Invalid name" };
-    }
+    try {
+      const {
+        name,
+        brand,
+        price,
+        mrp,
+        store_id,
+        category,
+        stock,
+        colors,
+        sizes,
+        offers,
+        fileBuffer,
+      } = data;
 
-    if (!price || price <= 0) {
-      throw { statusCode: 400, message: "Invalid price" };
-    }
+      if (!name || name.trim().length < 2) {
+        throw { statusCode: 400, message: "Invalid name" };
+      }
 
-    const cleanName = name.trim();
+      if (!price || price <= 0) {
+        throw { statusCode: 400, message: "Invalid price" };
+      }
 
-    const existingProduct = await Product.findOne({
-      where: {
-        name: {
-          [Op.iLike]: cleanName,
+      const cleanCategory =
+        typeof category === "string"
+          ? category.trim()
+          : category?.value?.trim();
+
+      if (!cleanCategory || cleanCategory.length < 2) {
+        throw { statusCode: 400, message: "Invalid category" };
+      }
+
+      if (stock == null || stock < 0) {
+        throw { statusCode: 400, message: "Invalid stock" };
+      }
+
+      const cleanName = name.trim();
+
+      const existingProduct = await Product.findOne({
+        where: {
+          name: {
+            [Op.iLike]: cleanName,
+          },
         },
-      },
-    });
+        transaction,
+      });
 
-    if (existingProduct) {
-      throw {
-        statusCode: 409,
-        message: `Product already exists: ${cleanName}`,
-      };
-    }
-
-    let image_url = null;
-    let public_id = null;
-
-    if (fileBuffer) {
-      const upload: any = await uploadToCloudinary(fileBuffer);
-      image_url = upload.secure_url;
-      public_id = upload.public_id;
-    }
-
-    if (store_id) {
-      const store = await Store.findByPk(store_id);
-
-      if (!store) {
+      if (existingProduct) {
         throw {
-          statusCode: 400,
-          message: "Invalid store_id",
+          statusCode: 409,
+          message: `Product already exists: ${cleanName}`,
         };
       }
-    }
 
-    const product = await Product.create({
-      name,
-      brand,
-      price,
-      mrp,
-      store_id: store_id,
-      currency: "INR",
-      rating: 0,
-      rating_count: 0,
-      image_url,
-      public_id,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
+      let image_url = null;
+      let public_id = null;
 
-    const productId = product.id;
+      if (fileBuffer) {
+        const upload: any = await uploadToCloudinary(fileBuffer);
+        image_url = upload.secure_url;
+        public_id = upload.public_id;
+      }
 
+      if (store_id) {
+        const storeExists = await Store.findByPk(store_id, { transaction });
 
-    if (image_url) {
-      await ProductImage.create({
-        product_id: productId,
-        url: image_url,
-        public_id,
+        if (!storeExists) {
+          throw {
+            statusCode: 400,
+            message: "Invalid store_id",
+          };
+        }
+      }
+
+      // Create product
+      const product = await Product.create(
+        {
+          name: cleanName,
+          brand,
+          price,
+          mrp,
+          store_id,
+          category,
+          stock,
+          currency: "INR",
+          rating: 0,
+          rating_count: 0,
+          image_url,
+          public_id,
+        },
+        { transaction }
+      );
+
+      const productId = product.id;
+
+      //  Related tables
+      if (image_url) {
+        await ProductImage.create(
+          {
+            product_id: productId,
+            url: image_url,
+            public_id,
+          },
+          { transaction }
+        );
+      }
+
+      if (colors?.length) {
+        await ProductColor.bulkCreate(
+          colors.map((c: any) => ({
+            product_id: productId,
+            name: c.name,
+            hex_code: c.hexCode,
+          })),
+          { transaction }
+        );
+      }
+
+      if (sizes?.length) {
+        await ProductSize.bulkCreate(
+          sizes.map((s: any) => ({
+            product_id: productId,
+            label: s.label,
+            is_available: true,
+          })),
+          { transaction }
+        );
+      }
+
+      if (offers?.length) {
+        await ProductOffer.bulkCreate(
+          offers.map((o: any) => ({
+            product_id: productId,
+            title: o.title,
+            description: o.description,
+            type: o.type,
+            action_text: o.action_text,
+          })),
+          { transaction }
+        );
+      }
+
+      // Fetch full product
+      const fullProduct = await Product.findByPk(productId, {
+        include: [
+          {
+            model: Store,
+            as: "store",
+            attributes: ["id", "name"],
+          },
+        ],
+        transaction,
       });
-    }
 
-    if (colors?.length) {
-      await ProductColor.bulkCreate(
-        colors.map((c: any) => ({
-          product_id: productId,
-          name: c.name,
-          hex_code: c.hexCode,
-        }))
-      );
-    }
+      await transaction.commit();
 
-    if (sizes?.length) {
-      await ProductSize.bulkCreate(
-        sizes.map((s: any) => ({
-          product_id: productId,
-          label: s.label,
-          is_available: true,
-        }))
-      );
-    }
+      const result = fullProduct?.toJSON();
 
-    if (offers?.length) {
-      await ProductOffer.bulkCreate(
-        offers.map((o: any) => ({
-          product_id: productId,
-          title: o.title,
-          description: o.description,
-          type: o.type,
-          action_text: o.action_text,
-        }))
-      );
-    }
+      delete result.store_id;
 
-    return product;
+      return result;
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   async getProductById(id: string) {
@@ -152,26 +205,38 @@ class ProductService {
           model: ProductOffer,
           as: "offers",
         },
+        {
+          model: Store,
+          as: "store", 
+          attributes: ["id", "name"],
+        },
       ],
     });
-
-    const p: any = product;
 
     if (!product) {
       throw { statusCode: 404, message: "Product not found" };
     }
 
-    const imageUrls = (product as any).images?.map((img: any) => img.url) || [];
+    const p: any = product;
 
+    //  Images
+    const imageUrls =
+      p.images?.map((img: any) => img.url) || [];
 
+    //  Discount
     const discountPercent =
-      product.mrp && product.price
-        ? Math.round(((product.mrp - product.price) / product.mrp) * 100)
+      p.mrp && p.price
+        ? Math.round(((p.mrp - p.price) / p.mrp) * 100)
         : 0;
 
+    //  Top Review
     const topReview =
-      (product as any).reviews
-        ?.sort((a: any, b: any) => b.rating - a.rating)[0] || null;
+      p.reviews?.sort((a: any, b: any) => b.rating - a.rating)[0] || null;
+
+    //  Stock status
+    let stock_status = "IN_STOCK";
+    if (p.stock === 0) stock_status = "OUT_OF_STOCK";
+    else if (p.stock <= 5) stock_status = "LOW_STOCK";
 
     return {
       id: p.id,
@@ -187,6 +252,11 @@ class ProductService {
 
       rating: p.rating,
       ratingCount: p.rating_count,
+
+      //  NEW FIELDS
+      category: p.category,
+      stock: p.stock,
+      stock_status,
 
       offers: p.offers || [],
       colors: p.colors || [],
@@ -211,10 +281,13 @@ class ProductService {
         }
         : null,
 
-      store: {
-        id: 1,
-        name: "Snap2Shop Central Store",
-      },
+      //  FIXED STORE (dynamic)
+      store: p.store
+        ? {
+          id: p.store.id,
+          name: p.store.name,
+        }
+        : null,
 
       isWishlisted: false,
 
@@ -222,89 +295,54 @@ class ProductService {
     };
   }
 
-  async getProducts(filters: any) {
+  async getAllProducts(filters: any) {
     const where: any = {};
 
-    if (filters.search) {
-      where.name = {
-        [Op.iLike]: `%${filters.search.trim()}%`,
-      };
+    // 🔥 Stock filter (for tabs like All / In Stock / Out of Stock)
+    if (filters.stock === "IN_STOCK") {
+      where.stock = { [Op.gt]: 0 };
     }
 
-    if (filters.brand) {
-      where.brand = {
-        [Op.iLike]: `%${filters.brand}%`,
-      };
+    if (filters.stock === "OUT_OF_STOCK") {
+      where.stock = 0;
     }
 
-    if (filters.minPrice || filters.maxPrice) {
-      where.price = {};
-
-      if (filters.minPrice) {
-        where.price[Op.gte] = Number(filters.minPrice);
-      }
-
-      if (filters.maxPrice) {
-        where.price[Op.lte] = Number(filters.maxPrice);
-      }
-    }
-
-    const page = Number(filters.page) || 1;
-    const limit = Number(filters.limit) || 10;
-
-    let order: any = [["created_at", "DESC"]]; // default latest
-
-    if (filters.sort === "price_asc") {
-      order = [["price", "ASC"]];
-    }
-
-    if (filters.sort === "price_desc") {
-      order = [["price", "DESC"]];
-    }
-
-    if (filters.sort === "rating") {
-      order = [["rating", "DESC"]];
-    }
-
-    const { rows, count } = await Product.findAndCountAll({
+    const products = await Product.findAll({
       where,
+      attributes: ["id", "name", "price", "stock", "image_url"],
+      order: [["created_at", "DESC"]],
+    });
+
+    // ✅ Format for UI
+    const result = products.map((p: any) => {
+      const item = p.toJSON();
+
+      let stock_status = "IN_STOCK";
+      if (item.stock === 0) stock_status = "OUT_OF_STOCK";
+      else if (item.stock <= 5) stock_status = "LOW_STOCK";
+
+      return {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        image: item.image_url,
+        stock_status,
+      };
+    });
+
+    return result;
+  }
+
+  async deleteProduct(id: string) {
+    const product: any = await Product.findByPk(id, {
       include: [
         {
           model: ProductImage,
           as: "images",
-          attributes: ["url"],
+          attributes: ["public_id"],
         },
       ],
-      limit,
-      offset: (page - 1) * limit,
-      order,
     });
-
-
-    const data = rows.map((p: any) => ({
-      id: p.id,
-      name: p.name,
-      brand: p.brand,
-      price: p.price,
-      mrp: p.mrp,
-      currency: p.currency || "INR",
-      rating: p.rating,
-      ratingCount: p.rating_count,
-      imageUrls: p.images?.map((img: any) => img.url) || [],
-      created_at: p.created_at,
-      updated_at: p.updated_at,
-    }));
-
-    return {
-      data,
-      total: count,
-      page,
-      limit,
-    };
-  }
-
-  async deleteProduct(id: string) {
-    const product = await Product.findByPk(id);
 
     if (!product) {
       throw {
@@ -313,141 +351,216 @@ class ProductService {
       };
     }
 
-    await product.destroy();
+    if (product.images?.length) {
+      for (const img of product.images) {
+        if (img.public_id) {
+          await deleteFromCloudinary(img.public_id);
+        }
+      }
+    }
 
-    return {
-      message: "Product deleted successfully",
-    };
+    const transaction = await sequelize.transaction();
+
+    try {
+      await product.destroy({ transaction }); // cascade handles child tables
+
+      await transaction.commit();
+
+      return {
+        message: "Product deleted successfully",
+      };
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   async updateFullProduct(id: string, data: any) {
-    const {
-      name,
-      brand,
-      price,
-      mrp,
-      colors,
-      sizes,
-      offers,
-      fileBuffer,
-    } = data;
+    const transaction = await sequelize.transaction();
 
-    const product = await Product.findByPk(id);
+    try {
+      const {
+        name,
+        brand,
+        price,
+        mrp,
+        category,
+        stock,
+        colors,
+        sizes,
+        offers,
+        fileBuffer,
+      } = data;
 
-    if (!product) {
-      throw { statusCode: 404, message: "Product not found" };
-    }
+      const product: any = await Product.findByPk(id, { transaction });
 
-    // ---------------------------
-    // DUPLICATE NAME CHECK
-    // ---------------------------
-    if (name !== undefined) {
-      const existing = await Product.findOne({
-        where: {
-          name: {
-            [Op.iLike]: name.trim(),
+      if (!product) {
+        throw { statusCode: 404, message: "Product not found" };
+      }
+
+      // ---------------------------
+      // VALIDATIONS (LIKE CREATE)
+      // ---------------------------
+      if (name !== undefined && name.trim().length < 2) {
+        throw { statusCode: 400, message: "Invalid name" };
+      }
+
+      if (price !== undefined && price <= 0) {
+        throw { statusCode: 400, message: "Invalid price" };
+      }
+
+      let cleanCategory = undefined;
+
+      if (category !== undefined) {
+        cleanCategory =
+          typeof category === "string"
+            ? category.trim()
+            : category?.value?.trim();
+
+        if (!cleanCategory || cleanCategory.length < 2) {
+          throw { statusCode: 400, message: "Invalid category" };
+        }
+      }
+
+      if (stock !== undefined && stock < 0) {
+        throw { statusCode: 400, message: "Invalid stock" };
+      }
+
+      // ---------------------------
+      // DUPLICATE NAME CHECK
+      // ---------------------------
+      if (name !== undefined) {
+        const existing = await Product.findOne({
+          where: {
+            name: { [Op.iLike]: name.trim() },
+            id: { [Op.ne]: id },
           },
-          id: { [Op.ne]: id },
+          transaction,
+        });
+
+        if (existing) {
+          throw {
+            statusCode: 409,
+            message: "Product name already exists",
+          };
+        }
+      }
+
+      // ---------------------------
+      // IMAGE UPDATE
+      // ---------------------------
+      let image_url = product.image_url;
+      let public_id = product.public_id;
+
+      if (fileBuffer) {
+        // 🔥 delete old image from Cloudinary
+        if (public_id) {
+          await deleteFromCloudinary(public_id);
+        }
+
+        const upload: any = await uploadToCloudinary(fileBuffer);
+
+        image_url = upload.secure_url;
+        public_id = upload.public_id;
+
+        await ProductImage.destroy({
+          where: { product_id: id },
+          transaction,
+        });
+
+        await ProductImage.create(
+          {
+            product_id: id,
+            url: image_url,
+            public_id,
+          },
+          { transaction }
+        );
+      }
+
+      // ---------------------------
+      // UPDATE PRODUCT
+      // ---------------------------
+      await product.update(
+        {
+          name: name !== undefined ? name.trim() : product.name,
+          brand: brand !== undefined ? brand : product.brand,
+          price: price !== undefined ? price : product.price,
+          mrp: mrp !== undefined ? mrp : product.mrp,
+          category:
+            cleanCategory !== undefined ? cleanCategory : product.category,
+          stock: stock !== undefined ? stock : product.stock,
+          image_url,
+          public_id,
         },
-      });
+        { transaction }
+      );
 
-      if (existing) {
-        throw {
-          statusCode: 409,
-          message: "Product name already exists",
-        };
+      // ---------------------------
+      // COLORS
+      // ---------------------------
+      if (colors !== undefined) {
+        await ProductColor.destroy({ where: { product_id: id }, transaction });
+
+        if (colors.length) {
+          await ProductColor.bulkCreate(
+            colors.map((c: any) => ({
+              product_id: id,
+              name: c.name,
+              hex_code: c.hexCode,
+            })),
+            { transaction }
+          );
+        }
       }
-    }
 
-    // ---------------------------
-    // IMAGE (OPTIONAL ✅)
-    // ---------------------------
-    let image_url = (product as any).image_url;
-    let public_id = (product as any).public_id;
+      // ---------------------------
+      // SIZES
+      // ---------------------------
+      if (sizes !== undefined) {
+        await ProductSize.destroy({ where: { product_id: id }, transaction });
 
-    if (fileBuffer) {
-      // 🔥 only replace if new image provided
-      await ProductImage.destroy({ where: { product_id: id } });
-
-      const upload: any = await uploadToCloudinary(fileBuffer);
-
-      image_url = upload.secure_url;
-      public_id = upload.public_id;
-
-      await ProductImage.create({
-        product_id: id,
-        url: image_url,
-        public_id,
-      });
-    }
-
-    // ---------------------------
-    // UPDATE PRODUCT (SAFE ✅)
-    // ---------------------------
-    await product.update({
-      name: name !== undefined ? name : product.name,
-      brand: brand !== undefined ? brand : product.brand,
-      price: price !== undefined ? price : product.price,
-      mrp: mrp !== undefined ? mrp : product.mrp,
-      image_url,
-      public_id,
-      updated_at: new Date(),
-    });
-
-    // ---------------------------
-    // COLORS (ONLY IF SENT)
-    // ---------------------------
-    if (colors !== undefined) {
-      await ProductColor.destroy({ where: { product_id: id } });
-
-      if (colors.length) {
-        await ProductColor.bulkCreate(
-          colors.map((c: any) => ({
-            product_id: id,
-            name: c.name,
-            hex_code: c.hexCode,
-          }))
-        );
+        if (sizes.length) {
+          await ProductSize.bulkCreate(
+            sizes.map((s: any) => ({
+              product_id: id,
+              label: s.label,
+              is_available: true,
+            })),
+            { transaction }
+          );
+        }
       }
-    }
 
-    // ---------------------------
-    // SIZES (ONLY IF SENT)
-    // ---------------------------
-    if (sizes !== undefined) {
-      await ProductSize.destroy({ where: { product_id: id } });
+      // ---------------------------
+      // OFFERS
+      // ---------------------------
+      if (offers !== undefined) {
+        await ProductOffer.destroy({ where: { product_id: id }, transaction });
 
-      if (sizes.length) {
-        await ProductSize.bulkCreate(
-          sizes.map((s: any) => ({
-            product_id: id,
-            label: s.label,
-            is_available: true,
-          }))
-        );
+        if (offers.length) {
+          await ProductOffer.bulkCreate(
+            offers.map((o: any) => ({
+              product_id: id,
+              title: o.title,
+              description: o.description,
+              type: o.type,
+              action_text: o.action_text,
+            })),
+            { transaction }
+          );
+        }
       }
+
+      await transaction.commit();
+
+      return await this.getProductById(id);
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
     }
-
-    // ---------------------------
-    // OFFERS (ONLY IF SENT)
-    // ---------------------------
-    if (offers !== undefined) {
-      await ProductOffer.destroy({ where: { product_id: id } });
-
-      if (offers.length) {
-        await ProductOffer.bulkCreate(
-          offers.map((o: any) => ({
-            product_id: id,
-            title: o.title,
-            description: o.description,
-            type: o.type,
-            action_text: o.action_text,
-          }))
-        );
-      }
-    }
-
-    return await this.getProductById(id);
   }
 }
 

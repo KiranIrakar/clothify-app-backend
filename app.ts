@@ -28,8 +28,8 @@ export const app = Fastify({
   },
 });
    app.register(fastifyCors, {
-  origin: "http://localhost:4200",
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  origin: "*", // allow all origins so APK/mobile devices can connect
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 });
 
 app.register(fastifyMultipart, {

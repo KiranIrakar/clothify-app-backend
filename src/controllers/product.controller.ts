@@ -26,10 +26,10 @@ class ProductController {
 
         store_id: fields.store_id?.value,
 
-        // ✅ ADD THIS
+        //  ADD THIS
         category: fields.category?.value,
 
-        // ✅ ADD THIS
+        //  ADD THIS
         stock: fields.stock?.value
           ? Number(fields.stock.value)
           : undefined,
@@ -83,19 +83,20 @@ class ProductController {
     }
   };
 
-
   getAllProduct = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const query: any = req.query;
+
       const products = await this.productService.getAllProducts(query);
 
-      reply.send({
+      return reply.send({
         success: true,
         message: "Products fetched successfully",
-        data: products
+        data: products,
       });
     } catch (error: any) {
-      reply.status(500).send({
+      console.error(error); 
+      return reply.status(500).send({
         success: false,
         message: "Failed to fetch products",
       });

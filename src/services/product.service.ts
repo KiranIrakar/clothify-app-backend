@@ -207,7 +207,7 @@ class ProductService {
         },
         {
           model: Store,
-          as: "store", 
+          as: "store",
           attributes: ["id", "name"],
         },
       ],
@@ -298,7 +298,7 @@ class ProductService {
   async getAllProducts(filters: any) {
     const where: any = {};
 
-    // 🔥 Stock filter (for tabs like All / In Stock / Out of Stock)
+    // ✅ Stock filter
     if (filters.stock === "IN_STOCK") {
       where.stock = { [Op.gt]: 0 };
     }
@@ -309,7 +309,14 @@ class ProductService {
 
     const products = await Product.findAll({
       where,
-      attributes: ["id", "name", "price", "stock", "image_url"],
+      attributes: ["id", "name", "price", "stock"],
+      include: [
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["url", "public_id"], 
+        },
+      ],
       order: [["created_at", "DESC"]],
     });
 
@@ -321,18 +328,25 @@ class ProductService {
       if (item.stock === 0) stock_status = "OUT_OF_STOCK";
       else if (item.stock <= 5) stock_status = "LOW_STOCK";
 
+      const images = item.images || [];
+
+      // ⭐ MAIN IMAGE (first image fallback)
+      const mainImage = images[0]?.url || null;
+
       return {
         id: item.id,
         name: item.name,
         price: item.price,
-        image: item.image_url,
         stock_status,
+
+        // 🖼️ UI fields
+        image: mainImage,   
+        // images: images.map((img: any) => img.url), 
       };
     });
 
     return result;
   }
-
   async deleteProduct(id: string) {
     const product: any = await Product.findByPk(id, {
       include: [

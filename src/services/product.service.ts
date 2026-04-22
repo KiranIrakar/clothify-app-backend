@@ -8,6 +8,8 @@ import ProductOffer from "../models/product-offers-model";
 import { uploadToCloudinary, deleteFromCloudinary, } from "../utils/cloudinaty.utils";
 import Store from "../models/store.model";
 import sequelize from "../config/db";
+import { getPagination } from "../utils/pagination";
+
 class ProductService {
 
   async createFullProduct(data: any) {
@@ -298,7 +300,7 @@ class ProductService {
   async getAllProducts(filters: any) {
     const where: any = {};
 
-    // ✅ Stock filter
+    // Stock filter
     if (filters.stock === "IN_STOCK") {
       where.stock = { [Op.gt]: 0 };
     }
@@ -307,20 +309,24 @@ class ProductService {
       where.stock = 0;
     }
 
-    const products = await Product.findAll({
+    const { page, limit, offset } = getPagination(filters);
+
+    const { rows: products, count: total } = await Product.findAndCountAll({
       where,
       attributes: ["id", "name", "price", "stock"],
       include: [
         {
           model: ProductImage,
           as: "images",
-          attributes: ["url", "public_id"], 
+          attributes: ["url", "public_id"],
         },
       ],
-      order: [["created_at", "DESC"]],
+      order: [["createdAt", "DESC"]],
+      limit,    
+      offset,
     });
 
-    // ✅ Format for UI
+    //  Format for UI
     const result = products.map((p: any) => {
       const item = p.toJSON();
 
@@ -330,7 +336,7 @@ class ProductService {
 
       const images = item.images || [];
 
-      // ⭐ MAIN IMAGE (first image fallback)
+      //  MAIN IMAGE (first image fallback)
       const mainImage = images[0]?.url || null;
 
       return {
@@ -339,13 +345,19 @@ class ProductService {
         price: item.price,
         stock_status,
 
-        // 🖼️ UI fields
-        image: mainImage,   
+        //  UI fields
+        image: mainImage,
         // images: images.map((img: any) => img.url), 
       };
     });
 
-    return result;
+   return {
+    data: result,   
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
   }
   async deleteProduct(id: string) {
     const product: any = await Product.findByPk(id, {

@@ -1,6 +1,8 @@
 import { FastifyInstance } from "fastify";
 import { AuthController } from "../controllers/auth.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
+import { requirePermission } from "../middlewares/role.middleware";
+import { PERMISSIONS } from "../config/permissions";
 
 export default async function authRoutes(app: FastifyInstance) {
   const authController = new AuthController();
@@ -17,5 +19,12 @@ export default async function authRoutes(app: FastifyInstance) {
 
     protectedApp.post("/changephone", authController.changePhoneRequest);
     protectedApp.post("/verifychangephone", authController.verifyChangePhone);
+
+    // ✅ SUPERADMIN only — assign a role to any user
+    protectedApp.post(
+      "/assign-role",
+      { preHandler: requirePermission(PERMISSIONS.USER_MANAGE) },
+      authController.assignRole
+    );
   });
 }

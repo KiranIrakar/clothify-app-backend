@@ -9,6 +9,7 @@ import userProfileRoutes from "./src/routes/user-profile.route";
 import reviewRoutes from "./src/routes/reviews.route";
 import wishlistRoutes from "./src/routes/wishlist.routes";
 import storeRoutes from "./src/routes/store.route";
+import cartRoutes from "./src/routes/cart.route";
 // import logger from "./src/config/logger";
 
 dotenv.config();
@@ -46,4 +47,5 @@ app.register(userProfileRoutes, { prefix: "/user-profile" });
 app.register(reviewRoutes, { prefix: "/reviews" });
 app.register(wishlistRoutes, { prefix: "/wishlist" });
 app.register(storeRoutes, { prefix: "/stores" });
+app.register(cartRoutes, { prefix: "/cart" });
   

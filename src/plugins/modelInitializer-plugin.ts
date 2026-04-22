@@ -6,6 +6,8 @@ import ProductSize from "../models/product-sizes-model";
 import ProductOffer from "../models/product-offers-model";
 import Wishlist from "../models/wishlist.model";
 import Store from "../models/store.model";
+import Cart from "../models/carts.model";
+import CartItem from "../models/cartItems.model";
 
 export const initModels = () => {
 
@@ -95,5 +97,19 @@ export const initModels = () => {
     foreignKey: "store_id",
   });
 
+Cart.hasMany(CartItem, {
+  foreignKey: "cart_id",
+  as: "items"
+});
+
+CartItem.belongsTo(Cart, {
+  foreignKey: "cart_id",
+  as: "cart"
+});
+
+CartItem.belongsTo(Product, {
+  foreignKey: "product_id",
+  as: "product"
+});
 
 };

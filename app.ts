@@ -10,7 +10,6 @@ import reviewRoutes from "./src/routes/reviews.route";
 import wishlistRoutes from "./src/routes/wishlist.routes";
 import storeRoutes from "./src/routes/store.route";
 import cartRoutes from "./src/routes/cart.route";
-import "./src/models";
 // import logger from "./src/config/logger";
 
 dotenv.config();

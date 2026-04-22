@@ -7,6 +7,7 @@ import UserProfile from "../models/user-profile.model";
 import bcrypt from "bcrypt";
 // import { whatsappClient } from "../utils/whatsapp";
 import { logger } from "../utils/logger";
+import { ROLES, Role } from "../config/permissions";
 
 export class AuthService {
   private async findUserByEmailOrPhone(email?: string, phone?: string) {
@@ -29,11 +30,12 @@ export class AuthService {
       id: user.getDataValue("id"),
       email: user.getDataValue("email"),
       name: user.getDataValue("fullName"),
+      role: user.getDataValue("role"),  // ✅ include role in response
     };
   }
 
   async signup(data: any) {
-    const { email, name, password, phone } = data;
+    const { email, name, password, phone, role } = data;
 
     if (!email || !password || !name) {
       throw new Error("Email, Name and Password are required");
@@ -48,6 +50,10 @@ export class AuthService {
       throw new Error("User already exists");
     }
 
+    // Only allow valid roles. SUPERADMIN cannot be set via signup for security.
+    const allowedRoles: Role[] = [ROLES.ADMIN, ROLES.STORE_OWNER, ROLES.USER];
+    const assignedRole: Role = allowedRoles.includes(role) ? role : ROLES.USER;
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await UserProfile.create({
@@ -55,6 +61,7 @@ export class AuthService {
       fullName: name,
       password: hashedPassword,
       mobileNumber: phone,
+      role: assignedRole,  // ✅ assign role on creation
     });
 
     return {
@@ -99,7 +106,8 @@ export class AuthService {
 
     const token = generateToken({
       id: user.getDataValue("id"),
-      email: user.getDataValue("email")
+      email: user.getDataValue("email"),
+      role: user.getDataValue("role"), // ✅ include role in JWT
     });
 
     return {
@@ -320,7 +328,8 @@ export class AuthService {
 
     const token = generateToken({
       id: user.getDataValue("id"),
-      email: user.getDataValue("email")
+      email: user.getDataValue("email"),
+      role: user.getDataValue("role"), // ✅ include role in JWT
     });
 
     return {
@@ -398,5 +407,25 @@ export class AuthService {
     };
   }
 
+  // ✅ SUPERADMIN only — change the role of any user
+  async assignRole(data: { userId: string; role: string }) {
+    const { userId, role } = data;
+
+    const validRoles = Object.values(ROLES);
+    if (!validRoles.includes(role as any)) {
+      throw new Error(`Invalid role. Allowed: ${validRoles.join(", ")}`);
+    }
+
+    const user = await UserProfile.findByPk(userId);
+    if (!user) throw new Error("User not found");
+
+    await user.update({ role });
+
+    return {
+      message: `Role updated to '${role}' for user ${userId}`,
+      userId,
+      role,
+    };
+  }
 
 }

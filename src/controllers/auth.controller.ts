@@ -6,13 +6,14 @@ export class AuthController {
   private authService = new AuthService();
 
   signup = async (req: FastifyRequest, reply: FastifyReply) => {
-    const { email, name, password, phone }: any = req.body;
+    const { email, name, password, phone, role }: any = req.body;
 
     const result = await this.authService.signup({
       email,
       name,
       password,
-      phone
+      phone,
+      role,  
     });
 
     reply.send(result);
@@ -91,6 +92,12 @@ verifyChangePhone = async (req: FastifyRequest, reply: FastifyReply) => {
  
   reply.send(result);
 };
- 
+
+  // ✅ SUPERADMIN only — assign any role to any user
+  assignRole = async (req: FastifyRequest, reply: FastifyReply) => {
+    const { userId, role }: any = req.body;
+    const result = await this.authService.assignRole({ userId, role });
+    reply.send(result);
+  };
 
 }

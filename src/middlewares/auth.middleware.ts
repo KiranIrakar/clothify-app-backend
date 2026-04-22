@@ -22,13 +22,12 @@ export async function authMiddleware(
       });
     }
 
- 
     const decoded: any = jwt.verify(
       token,
       process.env.JWT_SECRET as string
     );
 
-
+    // ✅ Store full decoded JWT (id, email, role) on the request
     (request as any).user = decoded;
 
   } catch (error) {

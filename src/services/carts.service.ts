@@ -122,6 +122,37 @@ class CartService {
             { where: { id: cartId } }
         );
     }
-}
 
+ async getAllCarts(query: any) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { rows, count } = await Cart.findAndCountAll({
+      limit,
+      offset,
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: CartItem,
+          as: "items",
+          include: [
+            {
+              model: Product,
+              as: "product"
+            }
+          ]
+        }
+      ]
+    });
+
+    return {
+      total: count,
+      page,
+      limit,
+      data: rows
+    };
+  }
+
+}
 export default CartService;

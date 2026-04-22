@@ -10,4 +10,5 @@ export default async function cartRoutes(app: FastifyInstance) {
   app.put("/cart/:itemId", { preHandler: [authMiddleware] }, controller.updateItem);
   app.delete("/cart/:itemId", { preHandler: [authMiddleware] }, controller.removeItem);
   app.delete("/cart", { preHandler: [authMiddleware] }, controller.clearCart);
+  app.get("/all", { preHandler: [authMiddleware] }, controller.getAllCarts);
 }

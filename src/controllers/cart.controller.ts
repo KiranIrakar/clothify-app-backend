@@ -35,6 +35,13 @@ class CartController {
     const result = await this.cartService.clearCart(userId);
     reply.send(result);
   };
+
+   getAllCarts = async (req: FastifyRequest, reply: FastifyReply) => {
+    const carts = await this.cartService.getAllCarts((req as any).query);
+    reply.send(carts);
+  };
+
+
 }
 
 export default CartController;

@@ -27,9 +27,10 @@ export const app = Fastify({
     },
   },
 });
-   app.register(fastifyCors, {
-  origin: "*", // allow all origins so APK/mobile devices can connect
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    app.register(fastifyCors, {
+   origin: "*", // allow all origins so APK/mobile devices can connect
+   methods: ["GET", "POST", "PUT", "DELETE"],
+   allowedHeaders: ["Content-Type", "Authorization"],
 });
 
 app.register(fastifyMultipart, {

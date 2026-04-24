@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 // import { whatsappClient } from "../utils/whatsapp";
 import { logger } from "../utils/logger";
 import { ROLES, Role } from "../config/permissions";
+import { validateEmail } from "../utils/validations";
 
 export class AuthService {
   private async findUserByEmailOrPhone(email?: string, phone?: string) {
@@ -30,7 +31,7 @@ export class AuthService {
       id: user.getDataValue("id"),
       email: user.getDataValue("email"),
       name: user.getDataValue("fullName"),
-      role: user.getDataValue("role"),  // ✅ include role in response
+      role: user.getDataValue("role"),
     };
   }
 
@@ -41,6 +42,8 @@ export class AuthService {
       throw new Error("Email, Name and Password are required");
     }
 
+    const validatedEmail = validateEmail(email);
+
     if (phone) {
       validateIndianPhone(phone);
     }
@@ -50,18 +53,17 @@ export class AuthService {
       throw new Error("User already exists");
     }
 
-    // Only allow valid roles. SUPERADMIN cannot be set via signup for security.
     const allowedRoles: Role[] = [ROLES.ADMIN, ROLES.STORE_OWNER, ROLES.USER];
     const assignedRole: Role = allowedRoles.includes(role) ? role : ROLES.USER;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await UserProfile.create({
-      email,
+      email: validatedEmail,
       fullName: name,
       password: hashedPassword,
       mobileNumber: phone,
-      role: assignedRole,  // ✅ assign role on creation
+      role: assignedRole,
     });
 
     return {
@@ -107,7 +109,7 @@ export class AuthService {
     const token = generateToken({
       id: user.getDataValue("id"),
       email: user.getDataValue("email"),
-      role: user.getDataValue("role"), // ✅ include role in JWT
+      role: user.getDataValue("role"),
     });
 
     return {
@@ -206,7 +208,6 @@ export class AuthService {
     };
   }
 
-
   async generateOtp(data: any) {
     const { email, phone } = data;
 
@@ -222,76 +223,52 @@ export class AuthService {
     const expiry = new Date(Date.now() + 5 * 60 * 1000);
 
     try {
-      let user;
+      const user = await this.findUserByEmailOrPhone(email, phone);
 
-      user = await this.findUserByEmailOrPhone(email, phone);
-
-      if (user) {
-        await user.update({
-          otp,
-          otp_expiry: expiry,
-          email: email || user.getDataValue("email"),
-          mobileNumber: phone || user.getDataValue("mobileNumber"),
-        });
-      } else {
-        user = await UserProfile.create({
-          email: email || null,
-          mobileNumber: phone || null,
-          otp,
-          otp_expiry: expiry,
-        });
+      if (!user) {
+        throw {
+          statusCode: 404,
+          message: "Account does not exist. Please signup first."
+        };
       }
 
-      const finalPhone = phone || user.getDataValue("mobileNumber");
-      const finalEmail = email || user.getDataValue("email");
+      await user.update({
+        otp,
+        otp_expiry: expiry
+      });
+
       let sent = false;
-      const errors = [];
+      const errors: string[] = [];
 
-      if (finalEmail) {
+      if (email) {
         try {
-          await sendEmail(finalEmail, otp, user.getDataValue("fullName") || "User");
-          logger.info("Email sent successfully", { email: finalEmail });
+          await sendEmail(email, otp, user.getDataValue("fullName") || "User");
           sent = true;
         } catch (err: any) {
-          logger.error("Email failed", err);
-          errors.push(`Email delivery failed: ${err?.message || "Unknown error"}`);
+          errors.push(`Email failed: ${err?.message}`);
         }
       }
 
-      if (finalPhone) {
+      if (phone) {
         try {
-          await sendSMS(finalPhone, otp);
-          logger.info("SMS sent successfully", { phone: finalPhone });
+          await sendSMS(phone, otp);
           sent = true;
         } catch (err: any) {
-          logger.error("SMS failed", err);
-          errors.push(`SMS delivery failed: ${err?.message || "Unknown error"}`);
+          errors.push(`SMS failed: ${err?.message}`);
         }
       }
 
-      if (finalPhone) {
-        // try {
-        //   await whatsappClient.sendWhatsApp(
-        //     finalPhone,
-        //     `Your OTP is ${otp}`
-        //   );
-        //   logger.info("WhatsApp sent successfully", { phone: finalPhone });
-        //   sent = true;
-        // } catch (err: any) {
-        //   logger.error("WhatsApp failed", err);
-        //   errors.push(`WhatsApp delivery failed: ${err?.message || "Unknown error"}`);
-        // }
-      }
 
       if (!sent) {
-        throw new Error(`OTP failed to send via all channels: ${errors.join("; ")}`);
+        throw new Error(`OTP failed: ${errors.join("; ")}`);
       }
 
       return {
-        message: "OTP generated and sent successfully",
-        sentVia: finalEmail && finalPhone ? "email and SMS" : finalEmail ? "email" : "SMS",
+        message: "OTP sent successfully",
+        sentVia: email ? "email" : "SMS",
         userId: user.getDataValue("id")
       };
+
     } catch (err: any) {
       console.error("🔥 generateOtp error:", err);
       throw err;
@@ -302,34 +279,47 @@ export class AuthService {
     const { email, password } = data;
 
     if (!email || !password) {
-      throw new Error("Email and Password are required");
+      throw {
+        statusCode: 400,
+        message: "Email and Password are required"
+      };
     }
 
-    const user = await UserProfile.findOne({ where: { email } });
+    const validatedEmail = validateEmail(email);
+
+    const user = await UserProfile.findOne({
+      where: { email: validatedEmail }
+    });
 
     if (!user) {
-      throw new Error("Invalid email or password");
+      throw {
+        statusCode: 404,
+        message: "Account does not exist. Please signup first."
+      };
     }
 
     const hashedPassword = user.getDataValue("password") as string | null;
 
     if (!hashedPassword) {
-      throw new Error("Invalid email or password");
+      throw {
+        statusCode: 401,
+        message: "Invalid email or password"
+      };
     }
 
-    const isMatch = await bcrypt.compare(
-      password,
-      hashedPassword
-    );
+    const isMatch = await bcrypt.compare(password, hashedPassword);
 
     if (!isMatch) {
-      throw new Error("Invalid email or password");
+      throw {
+        statusCode: 401,
+        message: "Invalid email or password"
+      };
     }
 
     const token = generateToken({
       id: user.getDataValue("id"),
       email: user.getDataValue("email"),
-      role: user.getDataValue("role"), // ✅ include role in JWT
+      role: user.getDataValue("role"),
     });
 
     return {

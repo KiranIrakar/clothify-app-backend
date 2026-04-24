@@ -9,7 +9,7 @@ export function generateToken(user: any) {
     },
     process.env.JWT_SECRET as string,
     {
-      expiresIn: "7d"
+      expiresIn: "4d"
     }
   );
 }

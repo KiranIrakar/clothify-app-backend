@@ -8,6 +8,8 @@ import Wishlist from "../models/wishlist.model";
 import Store from "../models/store.model";
 import Cart from "../models/carts.model";
 import CartItem from "../models/cartItems.model";
+import Address from "../models/address.model";
+import UserProfile from "../models/user-profile.model";
 
 export const initModels = () => {
 
@@ -110,6 +112,16 @@ CartItem.belongsTo(Cart, {
 CartItem.belongsTo(Product, {
   foreignKey: "product_id",
   as: "product"
+});
+
+UserProfile.hasMany(Address, {
+  foreignKey: "user_id",
+  as: "addresses",
+});
+
+Address.belongsTo(UserProfile, {
+  foreignKey: "user_id",
+  as: "user",
 });
 
 };

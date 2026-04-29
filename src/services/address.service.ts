@@ -1,3 +1,4 @@
+import { AnyCaaRecord } from "dns";
 import Address from "../models/address.model";
 
 class AddressService {
@@ -44,7 +45,7 @@ class AddressService {
     return address;
   }
 
-  async deleteAddress(id: string) {
+  async deleteAddress(id: any) {
     const address = await Address.findByPk(id);
 
     if (!address) {

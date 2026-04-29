@@ -14,6 +14,10 @@ Address.init(
     user_id: {
       type: DataTypes.UUID,
       allowNull: false,
+       references: {
+                model: "user-profiles",
+                key: "id",
+            },
     },
 
     name: {

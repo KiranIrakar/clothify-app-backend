@@ -15,15 +15,7 @@ export default async function productRoutes(app: FastifyInstance) {
   // Public (authenticated) — any logged-in user can read
   app.get("/",            productController.getAllProduct);
   app.get("/product/:id", productController.getProductById);
-  app.post("/", {
-    preHandler: TokenService.checkPermission(['O', 'A'], ['C'])
-  }, productController.createProduct);
-
-  app.put("/product/:id", {
-    preHandler: TokenService.checkPermission(['O', 'A'], ['U'])
-  }, productController.updateProduct);
-
-  app.delete("/product/:id", {
-    preHandler: TokenService.checkPermission(['A'], ['D'])
-  }, productController.deleteProduct);
+  app.post("/",  {preHandler: TokenService.checkPermission(['O', 'A'], ['C'])}, productController.createProduct);
+  app.put("/product/:id", { preHandler: TokenService.checkPermission(['O', 'A'], ['U'])}, productController.updateProduct);
+  app.delete("/product/:id", { preHandler: TokenService.checkPermission(['A'], ['D'])}, productController.deleteProduct);
 }

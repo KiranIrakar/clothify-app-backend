@@ -1,46 +1,120 @@
 import Store from "../models/store.model";
 import { Op } from "sequelize";
+import User from "../models/user-profile.model";
+import { getPagination } from "../utils/pagination";
 
 class StoreService {
+  // CREATE STORE
+  async createStore(data: any) {
+    const cleanName = data.store_name?.trim();
 
-async createStore(data: any) {
-  const cleanName = data.name.trim();
-
-  const existing = await Store.findOne({
-    where: {
-      name: {
-        [Op.iLike]: cleanName, // case-insensitive
+    const existing = await Store.findOne({
+      where: {
+        store_name: {
+          [Op.iLike]: cleanName,
+        },
       },
-    },
-  });
+    });
 
-  if (existing) {
-    throw {
-      statusCode: 409,
-      message: `Store already exists: ${cleanName}`,
-    };
+    if (existing) {
+      throw {
+        statusCode: 409,
+        message: `Store already exists with name: ${cleanName}`,
+      };
+    }
+
+    const store = await Store.create({
+      ...data,
+      store_name: cleanName,
+    });
+
+    return store;
   }
 
-  return await Store.create({
-    ...data,
-    name: cleanName,
+  // GET ALL STORES
+async getStores(query: any) {
+  const { page, limit, offset } = getPagination(query);
+
+  const { rows, count } = await Store.findAndCountAll({
+    include: [
+      {
+        model: User,
+        as: "user", 
+        attributes: ["id", "fullName"],
+      },
+    ],
+    order: [["created_at", "DESC"]],
+    limit,
+    offset,
   });
+
+  return {
+    data: rows,
+    total: count,
+    page,
+    limit,
+    totalPages: Math.ceil(count / limit),
+  };
 }
 
-  async getStores() {
-    return await Store.findAll({
-      order: [["createdAt", "DESC"]],
-    });
-  }
-
+  // GET STORE BY ID
   async getStoreById(id: string) {
-    const store = await Store.findByPk(id);
+    const store = await Store.findByPk(id, {
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: [
+            "id",
+            "fullName",
+            "email",
+            "mobileNumber",
+            "role",
+          ],
+        },
+      ],
+    });
 
     if (!store) {
-      throw { statusCode: 404, message: "Store not found" };
+      throw {
+        statusCode: 404,
+        message: "Store not found",
+      };
     }
 
     return store;
+  }
+
+  // UPDATE STORE
+  async updateStore(id: string, data: any) {
+    const store = await Store.findByPk(id);
+
+    if (!store) {
+      throw {
+        statusCode: 404,
+        message: "Store not found",
+      };
+    }
+
+    await store.update(data);
+
+    return store;
+  }
+
+  // DELETE STORE
+  async deleteStore(id: string) {
+    const store = await Store.findByPk(id);
+
+    if (!store) {
+      throw {
+        statusCode: 404,
+        message: "Store not found",
+      };
+    }
+
+    await store.destroy();
+
+    return { message: "Store deleted successfully" };
   }
 }
 

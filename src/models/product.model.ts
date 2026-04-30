@@ -51,7 +51,7 @@ Product.init(
     },
     store_id: {
       type: DataTypes.UUID,
-      allowNull: true,
+      allowNull: false,
       references: {
         model: "stores",
         key: "id",
@@ -87,6 +87,7 @@ Product.init(
     timestamps: true,
     createdAt: "created_at",
     updatedAt: "updated_at",
+    underscored: true,
   }
 );
 

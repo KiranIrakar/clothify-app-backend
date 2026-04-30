@@ -8,7 +8,8 @@ import Wishlist from "../models/wishlist.model";
 import Store from "../models/store.model";
 import Cart from "../models/carts.model";
 import CartItem from "../models/cartItems.model";
-
+import User from "../models/user-profile.model";
+import UserProfile from "../models/user-profile.model";
 export const initModels = () => {
 
   // PRODUCT → IMAGES
@@ -110,6 +111,21 @@ CartItem.belongsTo(Cart, {
 CartItem.belongsTo(Product, {
   foreignKey: "product_id",
   as: "product"
+});
+
+User.hasOne(Store, {
+  foreignKey: "id",
+  as: "store"
+});
+
+Store.belongsTo(User, {
+  foreignKey: "id",
+  as: "seller"
+});
+
+Store.belongsTo(UserProfile, {
+  foreignKey: "user_id",
+  as: "user"
 });
 
 };

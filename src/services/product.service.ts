@@ -163,7 +163,7 @@ class ProductService {
           {
             model: Store,
             as: "store",
-            attributes: ["id", "name"],
+            attributes: ["id", "store_name"],
           },
         ],
         transaction,
@@ -210,7 +210,7 @@ class ProductService {
         {
           model: Store,
           as: "store",
-          attributes: ["id", "name"],
+          attributes: ["id", "store_name"],
         },
       ],
     });
@@ -287,7 +287,7 @@ class ProductService {
       store: p.store
         ? {
           id: p.store.id,
-          name: p.store.name,
+          name: p.store.store_name,
         }
         : null,
 
@@ -321,7 +321,7 @@ class ProductService {
           attributes: ["url", "public_id"],
         },
       ],
-      order: [["createdAt", "DESC"]],
+      // order: [["created_at", "DESC"]],
       limit,    
       offset,
     });

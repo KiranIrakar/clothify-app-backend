@@ -25,11 +25,7 @@ class ProductController {
           : undefined,
 
         store_id: fields.store_id?.value,
-
-        //  ADD THIS
         category: fields.category?.value,
-
-        //  ADD THIS
         stock: fields.stock?.value
           ? Number(fields.stock.value)
           : undefined,
@@ -45,8 +41,9 @@ class ProductController {
         offers: fields.offers?.value
           ? JSON.parse(fields.offers.value)
           : [],
+        description: fields.description?.value,
 
-        fileBuffer: buffer,
+        fileBuffer: buffer, 
       };
       const product = await this.productService.createFullProduct(payload);
 
@@ -92,7 +89,7 @@ class ProductController {
       return reply.send({
         success: true,
         message: "Products fetched successfully",
-         ...products,
+        ...products,
       });
     } catch (error: any) {
       return reply.status(500).send({

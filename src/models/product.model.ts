@@ -13,6 +13,7 @@ class Product extends Model {
   public store_id!: string;
   public category!: string;
   public stock!: number;
+  public description!: string;
   public created_at!: Date;
   public updated_at!: Date;
 }
@@ -38,11 +39,17 @@ Product.init(
     price: {
       type: DataTypes.FLOAT,
       allowNull: false,
+      validate: {
+        min: 0,
+      },
     },
 
     mrp: {
       type: DataTypes.FLOAT,
       allowNull: true,
+      validate: {
+        min: 0,
+      },
     },
 
     currency: {
@@ -56,7 +63,7 @@ Product.init(
         model: "stores",
         key: "id",
       },
-      onDelete: "SET NULL",
+      onDelete: "CASCADE",
     },
 
     rating: {
@@ -77,7 +84,11 @@ Product.init(
     stock: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      defaultValue: 0,
+      defaultValue: 1,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: false,
     },
 
   },

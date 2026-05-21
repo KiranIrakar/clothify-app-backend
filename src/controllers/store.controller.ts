@@ -150,6 +150,37 @@ class StoreController {
       });
     }
   };
+
+  getStoreByUserId = async (req: any, reply: FastifyReply) => {
+    try {
+      const userId = req.user.id;
+
+      const stores = await this.storeService.getStoreByUserId(userId);
+
+     
+      if (!stores || stores.length === 0) {
+        return reply.status(404).send({
+          success: false,
+          message: "No stores found for this user",
+        });
+      }
+
+      // success response
+      return reply.send({
+        success: true,
+        message: "User stores fetched successfully",
+        data: stores,
+      });
+
+    } catch (error: any) {
+
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message: error.message || "Failed to fetch user stores",
+      });
+
+    }
+  };
 }
 
 export default StoreController;

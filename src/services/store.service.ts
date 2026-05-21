@@ -32,30 +32,30 @@ class StoreService {
   }
 
   // GET ALL STORES
-async getStores(query: any) {
-  const { page, limit, offset } = getPagination(query);
+  async getStores(query: any) {
+    const { page, limit, offset } = getPagination(query);
 
-  const { rows, count } = await Store.findAndCountAll({
-    include: [
-      {
-        model: User,
-        as: "user", 
-        attributes: ["id", "fullName"],
-      },
-    ],
-    order: [["created_at", "DESC"]],
-    limit,
-    offset,
-  });
+    const { rows, count } = await Store.findAndCountAll({
+      include: [
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "fullName"],
+        },
+      ],
+      order: [["created_at", "DESC"]],
+      limit,
+      offset,
+    });
 
-  return {
-    data: rows,
-    total: count,
-    page,
-    limit,
-    totalPages: Math.ceil(count / limit),
-  };
-}
+    return {
+      data: rows,
+      total: count,
+      page,
+      limit,
+      totalPages: Math.ceil(count / limit),
+    };
+  }
 
   // GET STORE BY ID
   async getStoreById(id: string) {
@@ -115,6 +115,34 @@ async getStores(query: any) {
     await store.destroy();
 
     return { message: "Store deleted successfully" };
+  }
+
+  async getStoreByUserId(userId: string) {
+
+    // validate user id
+    if (!userId) {
+      throw {
+        statusCode: 400,
+        message: "User id is required",
+      };
+    }
+
+    const stores = await Store.findAll({
+      where: {
+        user_id: userId,
+      },
+      order: [["created_at", "DESC"]],
+    });
+
+    // if no stores found
+    if (!stores || stores.length === 0) {
+      throw {
+        statusCode: 404,
+        message: "No stores found for this user",
+      };
+    }
+
+    return stores;
   }
 }
 

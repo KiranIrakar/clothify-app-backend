@@ -24,6 +24,7 @@ class ProductService {
         store_id,
         category,
         stock,
+        description,
         colors,
         sizes,
         offers,
@@ -57,6 +58,13 @@ class ProductService {
 
       if (!cleanCategory || cleanCategory.length < 2) {
         throw { statusCode: 400, message: "Invalid category" };
+      }
+
+      if (!description || description.trim().length < 5) {
+        throw {
+          statusCode: 400,
+          message: "Description is required and must be at least 5 characters",
+        };
       }
 
       if (stock == null || stock < 1) {
@@ -111,6 +119,7 @@ class ProductService {
           store_id,
           category,
           stock,
+          description,
           currency: "INR",
           rating: 0,
           rating_count: 0,
@@ -169,7 +178,6 @@ class ProductService {
         );
       }
 
-      // Fetch full product
       const fullProduct = await Product.findByPk(productId, {
         include: [
           {
@@ -232,22 +240,15 @@ class ProductService {
     }
 
     const p: any = product;
-
-    //  Images
     const imageUrls =
       p.images?.map((img: any) => img.url) || [];
-
-    //  Discount
     const discountPercent =
       p.mrp && p.price
         ? Math.round(((p.mrp - p.price) / p.mrp) * 100)
         : 0;
-
-    //  Top Review
     const topReview =
       p.reviews?.sort((a: any, b: any) => b.rating - a.rating)[0] || null;
-
-    //  Stock status
+   
     let stock_status = "IN_STOCK";
     if (p.stock === 0) stock_status = "OUT_OF_STOCK";
     else if (p.stock <= 5) stock_status = "LOW_STOCK";
@@ -257,21 +258,16 @@ class ProductService {
       name: p.name,
       brand: p.brand,
       imageUrls,
-
       price: p.price,
       mrp: p.mrp,
       discountPercent,
-
       currency: p.currency || "INR",
-
       rating: p.rating,
       ratingCount: p.rating_count,
-
-      //  NEW FIELDS
       category: p.category,
+      description: p.description,
       stock: p.stock,
       stock_status,
-
       offers: p.offers || [],
       colors: p.colors || [],
       sizes: p.sizes || [],
@@ -295,7 +291,6 @@ class ProductService {
         }
         : null,
 
-      //  FIXED STORE (dynamic)
       store: p.store
         ? {
           id: p.store.id,
@@ -316,7 +311,6 @@ class ProductService {
       where.store_id = filters.store_id;
     }
 
-    // Stock filter
     if (filters.stock === "IN_STOCK") {
       where.stock = { [Op.gt]: 0 };
     }
@@ -435,9 +429,6 @@ class ProductService {
         throw { statusCode: 404, message: "Product not found" };
       }
 
-      // ---------------------------
-      // VALIDATIONS (LIKE CREATE)
-      // ---------------------------
       if (name !== undefined && name.trim().length < 2) {
         throw { statusCode: 400, message: "Invalid name" };
       }
@@ -463,9 +454,6 @@ class ProductService {
         throw { statusCode: 400, message: "Invalid stock" };
       }
 
-      // ---------------------------
-      // DUPLICATE NAME CHECK
-      // ---------------------------
       if (name !== undefined) {
         const existing = await Product.findOne({
           where: {
@@ -483,14 +471,10 @@ class ProductService {
         }
       }
 
-      // ---------------------------
-      // IMAGE UPDATE
-      // ---------------------------
       let image_url = product.image_url;
       let public_id = product.public_id;
 
       if (fileBuffer) {
-        // 🔥 delete old image from Cloudinary
         if (public_id) {
           await deleteFromCloudinary(public_id);
         }
@@ -515,9 +499,6 @@ class ProductService {
         );
       }
 
-      // ---------------------------
-      // UPDATE PRODUCT
-      // ---------------------------
       await product.update(
         {
           name: name !== undefined ? name.trim() : product.name,
@@ -533,9 +514,6 @@ class ProductService {
         { transaction }
       );
 
-      // ---------------------------
-      // COLORS
-      // ---------------------------
       if (colors !== undefined) {
         await ProductColor.destroy({ where: { product_id: id }, transaction });
 
@@ -551,9 +529,6 @@ class ProductService {
         }
       }
 
-      // ---------------------------
-      // SIZES
-      // ---------------------------
       if (sizes !== undefined) {
         await ProductSize.destroy({ where: { product_id: id }, transaction });
 
@@ -569,9 +544,7 @@ class ProductService {
         }
       }
 
-      // ---------------------------
-      // OFFERS
-      // ---------------------------
+
       if (offers !== undefined) {
         await ProductOffer.destroy({ where: { product_id: id }, transaction });
 

@@ -29,6 +29,9 @@ ProductSize.init(
         label: {
             type: DataTypes.STRING,
             allowNull: false,
+            validate: {
+                notEmpty: true,
+            },
         },
 
         is_available: {

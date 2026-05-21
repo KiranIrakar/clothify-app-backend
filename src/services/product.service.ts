@@ -297,68 +297,66 @@ class ProductService {
     };
   }
 
-  async getAllProducts(filters: any) {
-    const where: any = {};
+async getAllProducts(filters: any) {
+  const where: any = {};
 
-    // Stock filter
-    if (filters.stock === "IN_STOCK") {
-      where.stock = { [Op.gt]: 0 };
-    }
+  if (filters.store_id) {
+    where.store_id = filters.store_id;
+  }
 
-    if (filters.stock === "OUT_OF_STOCK") {
-      where.stock = 0;
-    }
+  // Stock filter
+  if (filters.stock === "IN_STOCK") {
+    where.stock = { [Op.gt]: 0 };
+  }
 
-    const { page, limit, offset } = getPagination(filters);
+  if (filters.stock === "OUT_OF_STOCK") {
+    where.stock = 0;
+  }
 
-    const { rows: products, count: total } = await Product.findAndCountAll({
-      where,
-      attributes: ["id", "name", "price", "stock"],
-      include: [
-        {
-          model: ProductImage,
-          as: "images",
-          attributes: ["url", "public_id"],
-        },
-      ],
-      // order: [["created_at", "DESC"]],
-      limit,    
-      offset,
-    });
+  const { page, limit, offset } = getPagination(filters);
 
-    //  Format for UI
-    const result = products.map((p: any) => {
-      const item = p.toJSON();
+  const { rows: products, count: total } = await Product.findAndCountAll({
+    where, 
+    attributes: ["id", "name", "price", "stock"],
+    include: [
+      {
+        model: ProductImage,
+        as: "images",
+        attributes: ["url", "public_id"],
+      },
+    ],
+    limit,
+    offset,
+  });
 
-      let stock_status = "IN_STOCK";
-      if (item.stock === 0) stock_status = "OUT_OF_STOCK";
-      else if (item.stock <= 5) stock_status = "LOW_STOCK";
+  const result = products.map((p: any) => {
+    const item = p.toJSON();
 
-      const images = item.images || [];
+    let stock_status = "IN_STOCK";
+    if (item.stock === 0) stock_status = "OUT_OF_STOCK";
+    else if (item.stock <= 5) stock_status = "LOW_STOCK";
 
-      //  MAIN IMAGE (first image fallback)
-      const mainImage = images[0]?.url || null;
+    const images = item.images || [];
 
-      return {
-        id: item.id,
-        name: item.name,
-        price: item.price,
-        stock_status,
+    const mainImage = images[0]?.url || null;
 
-        //  UI fields
-        image: mainImage,
-        // images: images.map((img: any) => img.url), 
-      };
-    });
+    return {
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      stock_status,
+      image: mainImage,
+    };
+  });
 
-   return {
-    data: result,   
+  return {
+    data: result,
     total,
     page,
     limit,
     totalPages: Math.ceil(total / limit),
   };
-  }
+}
   async deleteProduct(id: string) {
     const product: any = await Product.findByPk(id, {
       include: [

@@ -92,10 +92,9 @@ class ProductController {
       return reply.send({
         success: true,
         message: "Products fetched successfully",
-        data: products,
+         ...products,
       });
     } catch (error: any) {
-      console.error(error); 
       return reply.status(500).send({
         success: false,
         message: "Failed to fetch products",

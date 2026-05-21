@@ -38,6 +38,18 @@ class ProductService {
         throw { statusCode: 400, message: "Invalid price" };
       }
 
+      if (!mrp || mrp <= 0) {
+        throw { statusCode: 400, message: "Invalid MRP" };
+      }
+
+      if (price > mrp) {
+        throw {
+          statusCode: 400,
+          message: "Price cannot be greater than MRP",
+        };
+      }
+
+
       const cleanCategory =
         typeof category === "string"
           ? category.trim()
@@ -47,8 +59,8 @@ class ProductService {
         throw { statusCode: 400, message: "Invalid category" };
       }
 
-      if (stock == null || stock < 0) {
-        throw { statusCode: 400, message: "Invalid stock" };
+      if (stock == null || stock < 1) {
+        throw { statusCode: 400, message: "Stock should be a positive number" };
       }
 
       const cleanName = name.trim();
@@ -297,66 +309,66 @@ class ProductService {
     };
   }
 
-async getAllProducts(filters: any) {
-  const where: any = {};
+  async getAllProducts(filters: any) {
+    const where: any = {};
 
-  if (filters.store_id) {
-    where.store_id = filters.store_id;
-  }
+    if (filters.store_id) {
+      where.store_id = filters.store_id;
+    }
 
-  // Stock filter
-  if (filters.stock === "IN_STOCK") {
-    where.stock = { [Op.gt]: 0 };
-  }
+    // Stock filter
+    if (filters.stock === "IN_STOCK") {
+      where.stock = { [Op.gt]: 0 };
+    }
 
-  if (filters.stock === "OUT_OF_STOCK") {
-    where.stock = 0;
-  }
+    if (filters.stock === "OUT_OF_STOCK") {
+      where.stock = 0;
+    }
 
-  const { page, limit, offset } = getPagination(filters);
+    const { page, limit, offset } = getPagination(filters);
 
-  const { rows: products, count: total } = await Product.findAndCountAll({
-    where, 
-    attributes: ["id", "name", "price", "stock"],
-    include: [
-      {
-        model: ProductImage,
-        as: "images",
-        attributes: ["url", "public_id"],
-      },
-    ],
-    limit,
-    offset,
-  });
+    const { rows: products, count: total } = await Product.findAndCountAll({
+      where,
+      attributes: ["id", "name", "price", "stock"],
+      include: [
+        {
+          model: ProductImage,
+          as: "images",
+          attributes: ["url", "public_id"],
+        },
+      ],
+      limit,
+      offset,
+    });
 
-  const result = products.map((p: any) => {
-    const item = p.toJSON();
+    const result = products.map((p: any) => {
+      const item = p.toJSON();
 
-    let stock_status = "IN_STOCK";
-    if (item.stock === 0) stock_status = "OUT_OF_STOCK";
-    else if (item.stock <= 5) stock_status = "LOW_STOCK";
+      let stock_status = "IN_STOCK";
+      if (item.stock === 0) stock_status = "OUT_OF_STOCK";
+      else if (item.stock <= 5) stock_status = "LOW_STOCK";
 
-    const images = item.images || [];
+      const images = item.images || [];
 
-    const mainImage = images[0]?.url || null;
+      const mainImage = images[0]?.url || null;
+
+      return {
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        stock_status,
+        image: mainImage,
+      };
+    });
 
     return {
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      stock_status,
-      image: mainImage,
+      data: result,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     };
-  });
-
-  return {
-    data: result,
-    total,
-    page,
-    limit,
-    totalPages: Math.ceil(total / limit),
-  };
-}
+  }
   async deleteProduct(id: string) {
     const product: any = await Product.findByPk(id, {
       include: [

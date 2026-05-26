@@ -16,4 +16,5 @@ export default async function storeRoutes(app: FastifyInstance) {
   app.delete("/:id", { preHandler: TokenService.checkPermission(["A"], ["D"]) }, storeController.deleteStore);
   app.put("/:id", { preHandler: TokenService.checkPermission(["O", "A"], ["SC"]), }, storeController.updateStore);
   app.get("/user", { preHandler: TokenService.checkPermission(["O", "A"], ["SR"]), }, storeController.getStoreByUserId);
+  app.get("/:storeId/average-rating", { preHandler: TokenService.checkPermission(["ST", "A"], ["SAR"]) }, storeController.getStoreAverageRating);
 }

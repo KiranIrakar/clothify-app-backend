@@ -24,9 +24,9 @@ export const ROLES = {
  *   U   → ROLE_USER
  */
 export const ROLE_ALIASES: Record<string, string> = {
-  SA:ROLES.SUPERADMIN,
+  SA: ROLES.SUPERADMIN,
   A: ROLES.ADMIN,
-  O: ROLES.STORE_OWNER,
+  // O: ROLES.STORE_OWNER,
   ST: ROLES.STORE_OWNER,
   U: ROLES.USER,
 };
@@ -44,6 +44,7 @@ export const PERMISSIONS = {
   // Stores
   STORE_READ: "store:read",
   STORE_CREATE: "store:create",
+  STORE_ANALYTICS_READ: "store:analytics:read",
 
   // Orders
   ORDER_READ: "order:read",
@@ -53,6 +54,12 @@ export const PERMISSIONS = {
   // Users
   USER_READ: "user:read",
   USER_MANAGE: "user:manage",    // assign roles, deactivate users etc.
+
+  //Reviews
+  REVIEW_READ: "review:read",
+  REVIEW_CREATE: "review:create",
+  REVIEW_UPDATE: "review:update",
+  REVIEW_DELETE: "review:delete",
 } as const;
 
 /**
@@ -68,6 +75,7 @@ export const PERMISSIONS = {
  *   VTO → order:read   (View To Order)
  *   UR  → user:read
  *   UM  → user:manage
+ *     SAR: PERMISSIONS.STORE_ANALYTICS_READ,
  */
 export const PERMISSION_ALIASES: Record<string, string> = {
   R: PERMISSIONS.PRODUCT_READ,
@@ -81,6 +89,11 @@ export const PERMISSION_ALIASES: Record<string, string> = {
   VTO: PERMISSIONS.ORDER_READ,   // View To Order
   UR: PERMISSIONS.USER_READ,
   UM: PERMISSIONS.USER_MANAGE,
+  SAR: PERMISSIONS.STORE_ANALYTICS_READ,
+  RR: PERMISSIONS.REVIEW_READ,
+  RC: PERMISSIONS.REVIEW_CREATE,
+  RU: PERMISSIONS.REVIEW_UPDATE,
+  RD: PERMISSIONS.REVIEW_DELETE,
 };
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
@@ -96,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.PRODUCT_UPDATE,
     PERMISSIONS.PRODUCT_DELETE,
     PERMISSIONS.STORE_READ,
+    PERMISSIONS.STORE_ANALYTICS_READ,
     PERMISSIONS.ORDER_READ,
     PERMISSIONS.ORDER_CREATE,
     PERMISSIONS.ORDER_UPDATE,
@@ -107,8 +121,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.PRODUCT_CREATE,
     PERMISSIONS.PRODUCT_DELETE,
     PERMISSIONS.PRODUCT_UPDATE,
+
     PERMISSIONS.STORE_READ,
     PERMISSIONS.STORE_CREATE,
+    PERMISSIONS.STORE_ANALYTICS_READ,
+
     PERMISSIONS.ORDER_READ,
     PERMISSIONS.ORDER_CREATE,
     PERMISSIONS.ORDER_UPDATE,

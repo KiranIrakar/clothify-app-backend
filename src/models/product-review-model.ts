@@ -8,6 +8,7 @@ class ProductReview extends Model {
   public user_initials!: string;
   public rating!: number;
   public comment!: string;
+  public user_id!: string;
 }
 
 ProductReview.init(
@@ -46,6 +47,14 @@ ProductReview.init(
     comment: {
       type: DataTypes.TEXT,
       allowNull: true,
+    },
+    user_id: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: "user_profiles",
+        key: "id",
+      },
     },
     
 

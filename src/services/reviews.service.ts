@@ -1,12 +1,12 @@
 import Product from "../models/product.model";
 import ProductReview from "../models/product-review-model";
-
 export default class ReviewService {
 
   // ADD REVIEW
   async addReview(productId: string, data: any) {
     const { userName, rating, comment } = data;
-
+    const user_id = (data as any).user_id ?? (data as any).userId;
+ 
     if (!userName || userName.trim().length < 2) {
       throw { statusCode: 400, message: "Invalid user name" };
     }
@@ -18,11 +18,10 @@ export default class ReviewService {
     const product: any = await Product.findByPk(productId);
     if (!product) throw { statusCode: 404, message: "Product not found" };
 
-    // 🔥 OPTIONAL: prevent duplicate review
     const existing = await ProductReview.findOne({
       where: {
         product_id: productId,
-        user_name: userName,
+        user_id: user_id,
       },
     });
 
@@ -32,6 +31,7 @@ export default class ReviewService {
 
     const review = await ProductReview.create({
       product_id: productId,
+      user_id: user_id,
       user_name: userName,
       user_initials: userName.slice(0, 2).toUpperCase(),
       rating,

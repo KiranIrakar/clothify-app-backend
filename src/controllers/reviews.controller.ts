@@ -13,6 +13,7 @@ export default class ReviewController {
     try {
       const { id } = req.params as any;
       const body: any = req.body;
+      body.user_id = (req as any).user?.id;
 
       const review = await this.reviewService.addReview(id, body);
 

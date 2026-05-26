@@ -24,11 +24,11 @@ export const ROLES = {
  *   U   → ROLE_USER
  */
 export const ROLE_ALIASES: Record<string, string> = {
-  SA:  ROLES.SUPERADMIN,
-  A:   ROLES.ADMIN,
-  O:   ROLES.STORE_OWNER,
-  ST:  ROLES.STORE_OWNER,
-  U:   ROLES.USER,
+  SA:ROLES.SUPERADMIN,
+  A: ROLES.ADMIN,
+  O: ROLES.STORE_OWNER,
+  ST: ROLES.STORE_OWNER,
+  U: ROLES.USER,
 };
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
@@ -36,23 +36,23 @@ export type Role = (typeof ROLES)[keyof typeof ROLES];
 // ─── Define all possible permissions ─────────────────────────────────────────
 export const PERMISSIONS = {
   // Products
-  PRODUCT_READ:   "product:read",
+  PRODUCT_READ: "product:read",
   PRODUCT_CREATE: "product:create",
   PRODUCT_UPDATE: "product:update",
   PRODUCT_DELETE: "product:delete",
 
   // Stores
-  STORE_READ:   "store:read",
+  STORE_READ: "store:read",
   STORE_CREATE: "store:create",
 
   // Orders
-  ORDER_READ:   "order:read",
+  ORDER_READ: "order:read",
   ORDER_CREATE: "order:create",
   ORDER_UPDATE: "order:update",
 
   // Users
-  USER_READ:       "user:read",
-  USER_MANAGE:     "user:manage",    // assign roles, deactivate users etc.
+  USER_READ: "user:read",
+  USER_MANAGE: "user:manage",    // assign roles, deactivate users etc.
 } as const;
 
 /**
@@ -70,28 +70,27 @@ export const PERMISSIONS = {
  *   UM  → user:manage
  */
 export const PERMISSION_ALIASES: Record<string, string> = {
-  R:   PERMISSIONS.PRODUCT_READ,
-  C:   PERMISSIONS.PRODUCT_CREATE,
-  U:   PERMISSIONS.PRODUCT_UPDATE,
-  D:   PERMISSIONS.PRODUCT_DELETE,
-  SR:  PERMISSIONS.STORE_READ,
-  SC:  PERMISSIONS.STORE_CREATE,
-  OR:  PERMISSIONS.ORDER_READ,
-  OC:  PERMISSIONS.ORDER_CREATE,
+  R: PERMISSIONS.PRODUCT_READ,
+  C: PERMISSIONS.PRODUCT_CREATE,
+  U: PERMISSIONS.PRODUCT_UPDATE,
+  D: PERMISSIONS.PRODUCT_DELETE,
+  SR: PERMISSIONS.STORE_READ,
+  SC: PERMISSIONS.STORE_CREATE,
+  OR: PERMISSIONS.ORDER_READ,
+  OC: PERMISSIONS.ORDER_CREATE,
   VTO: PERMISSIONS.ORDER_READ,   // View To Order
-  UR:  PERMISSIONS.USER_READ,
-  UM:  PERMISSIONS.USER_MANAGE,
+  UR: PERMISSIONS.USER_READ,
+  UM: PERMISSIONS.USER_MANAGE,
 };
 
 export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 // ─── Map: Role → Permissions ──────────────────────────────────────────────────
 export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
-  // SUPERADMIN gets every permission
-  SUPERADMIN: Object.values(PERMISSIONS) as Permission[],
 
-  // ADMIN can manage products, view stores/users, and manage orders
-  ADMIN: [
+  [ROLES.SUPERADMIN]: Object.values(PERMISSIONS) as Permission[],
+
+  [ROLES.ADMIN]: [
     PERMISSIONS.PRODUCT_READ,
     PERMISSIONS.PRODUCT_CREATE,
     PERMISSIONS.PRODUCT_UPDATE,
@@ -103,8 +102,7 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.USER_READ,
   ],
 
-  // STORE_OWNER can manage their own store, products and orders
-  STORE_OWNER: [
+  [ROLES.STORE_OWNER]: [
     PERMISSIONS.PRODUCT_READ,
     PERMISSIONS.PRODUCT_CREATE,
     PERMISSIONS.PRODUCT_DELETE,
@@ -116,11 +114,11 @@ export const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     PERMISSIONS.ORDER_UPDATE,
   ],
 
-  // Normal customer — read only
-  ROLE_USER: [
+  [ROLES.USER]: [
     PERMISSIONS.PRODUCT_READ,
     PERMISSIONS.STORE_READ,
     PERMISSIONS.ORDER_READ,
+    PERMISSIONS.STORE_CREATE,
   ],
 };
 

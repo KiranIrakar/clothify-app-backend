@@ -16,3 +16,10 @@ export interface UserProfileAttributes {
 
 export interface UserProfileCreationAttributes
   extends Partial<UserProfileAttributes> {}
+  
+export enum USER_ROLE_ENUM {
+  SUPERADMIN = "SUPERADMIN",
+  ADMIN = "ADMIN",
+  STORE_OWNER = "STORE_OWNER",
+  ROLE_USER = "ROLE_USER",
+}

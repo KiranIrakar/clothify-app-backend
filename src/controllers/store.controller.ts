@@ -182,6 +182,35 @@ class StoreController {
 
     }
   };
+
+  getStoreAverageRating = async (
+  req: any,
+  reply: FastifyReply
+) => {
+  try {
+
+    const { storeId } = req.params;
+
+    const result =
+      await this.storeService.getStoreAverageRating(storeId);
+
+    return reply.send({
+      success: true,
+      message: "Store average rating fetched successfully",
+      data: result,
+    });
+
+  } catch (error: any) {
+
+    return reply.status(error.statusCode || 500).send({
+      success: false,
+      message:
+        error.message ||
+        "Failed to fetch average rating",
+    });
+
+  }
+};
 }
 
 export default StoreController;

@@ -2,6 +2,9 @@ import Store from "../models/store.model";
 import { Op } from "sequelize";
 import User from "../models/user-profile.model";
 import { getPagination } from "../utils/pagination";
+import { USER_ROLE_ENUM } from "../interface/user-profile.interface";
+import { generateToken } from "../utils/jwt";
+
 
 class StoreService {
   // CREATE STORE
@@ -28,7 +31,25 @@ class StoreService {
       store_name: cleanName,
     });
 
-    return store;
+    const user = await User.findByPk(data.user_id);
+
+    // change role only if current role is ROLE_USER
+    if (user && user.role === USER_ROLE_ENUM.ROLE_USER) {
+
+      await user.update({
+        role: USER_ROLE_ENUM.STORE_OWNER,
+      });
+    }
+
+    const updatedUser = await User.findByPk(data.user_id);
+
+    // generate new token
+    const token = generateToken(updatedUser);
+
+    return {
+      store,
+      token,
+    };
   }
 
   // GET ALL STORES

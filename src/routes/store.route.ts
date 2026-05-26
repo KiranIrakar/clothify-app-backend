@@ -10,7 +10,7 @@ export default async function storeRoutes(app: FastifyInstance) {
 
   app.addHook("preHandler", authMiddleware);
 
-  app.post("/", { preHandler: TokenService.checkPermission(["O", "A"], ["SC"]) }, storeController.createStore);
+  app.post("/", { preHandler: TokenService.checkPermission(["O", "A" , "U"], ["SC"]) }, storeController.createStore);
   app.get("/", storeController.getStores);
   app.get("/:id", storeController.getStoreById);
   app.delete("/:id", { preHandler: TokenService.checkPermission(["A"], ["D"]) }, storeController.deleteStore);

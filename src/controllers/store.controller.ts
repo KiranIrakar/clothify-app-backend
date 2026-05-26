@@ -30,7 +30,7 @@ class StoreController {
         }
       }
 
-      const store = await this.storeService.createStore({
+      const result = await this.storeService.createStore({
         ...body,
         ...(logoUrl && { logo: logoUrl }), //  optional logo
         user_id: (req as any).user.id,
@@ -39,7 +39,8 @@ class StoreController {
       return reply.status(201).send({
         success: true,
         message: "Store created successfully ",
-        data: store,
+        data: result.store,
+        token: result.token,
       });
     } catch (err: any) {
       return reply.status(500).send({

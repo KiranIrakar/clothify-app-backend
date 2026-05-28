@@ -10,6 +10,7 @@ import ProductReview from "../models/product-review-model";
 class StoreService {
   // CREATE STORE
   async createStore(data: any) {
+
     const cleanName = data.store_name?.trim();
 
     const existing = await Store.findOne({
@@ -27,25 +28,30 @@ class StoreService {
       };
     }
 
+    // create store
     const store = await Store.create({
       ...data,
       store_name: cleanName,
     });
 
+    // find user
     const user = await User.findByPk(data.user_id);
 
-    // change role only if current role is ROLE_USER
+    let token: string | null = null;
+
+    // change role only first time
     if (user && user.role === USER_ROLE_ENUM.ROLE_USER) {
 
       await user.update({
         role: USER_ROLE_ENUM.STORE_OWNER,
       });
+
+      // generate new token only after role change
+      token = generateToken({
+        ...user.toJSON(),
+        role: USER_ROLE_ENUM.STORE_OWNER,
+      });
     }
-
-    const updatedUser = await User.findByPk(data.user_id);
-
-    // generate new token
-    const token = generateToken(updatedUser);
 
     return {
       store,
@@ -169,73 +175,98 @@ class StoreService {
 
   async getStoreAverageRating(storeId: string) {
 
-  const store: any = await Store.findByPk(storeId);
+    const store: any = await Store.findByPk(storeId);
 
-  if (!store) {
-    throw {
-      statusCode: 404,
-      message: "Store not found",
-    };
-  }
+    if (!store) {
+      throw {
+        statusCode: 404,
+        message: "Store not found",
+      };
+    }
 
-  const products: any = await Product.findAll({
-    where: {
-      store_id: storeId,
-    },
-    attributes: ["id"],
-  });
+    const products: any = await Product.findAll({
+      where: {
+        store_id: storeId,
+      },
 
-  const productIds = products.map((p: any) => p.id);
+      attributes: ["id"],
+    });
 
-  const totalProducts = productIds.length;
+    const productIds = products.map(
+      (p: any) => p.id
+    );
 
-  if (!productIds.length) {
+    // if no products
+    if (!productIds.length) {
+      return {
+        store: {
+          id: store.id,
+          name: store.store_name,
+          category: store.store_type,
+          logo: store.logo,
+          banner: store.banner,
+          address: store.address,
+        },
+
+        average_rating: 0,
+      
+      };
+    }
+
+    const reviews: any = await ProductReview.findAll({
+      where: {
+        product_id: productIds,
+      },
+
+      attributes: ["rating"],
+    });
+
+    const totalReviews = reviews.length;
+
+    // if no reviews
+    if (!reviews.length) {
+      return {
+        store: {
+          id: store.id,
+          name: store.store_name,
+          category: store.store_type,
+          logo: store.logo,
+          banner: store.banner,
+          address: store.address,
+        },
+
+        average_rating: 0,
+        total_reviews: 0,
+      
+      };
+    }
+
+    const totalRating = reviews.reduce(
+      (sum: number, r: any) => sum + r.rating,
+      0
+    );
+
+    const average =
+      totalRating / totalReviews;
+
     return {
-      store_id: store.id,
-      store_name: store.store_name,
-      average_rating: 0,
-      total_reviews: 0,
-      total_products: 0,
+      store: {
+        id: store.id,
+        name: store.store_name,
+        category: store.store_type,
+        logo: store.logo,
+        banner: store.banner,
+        address: store.address,
+      },
+
+      average_rating: Number(
+        average.toFixed(1)
+      ),
+
+      total_reviews: totalReviews,
+    
     };
   }
-
-  const reviews: any = await ProductReview.findAll({
-    where: {
-      product_id: productIds,
-    },
-    attributes: ["rating"],
-  });
-
-  const totalReviews = reviews.length;
-
-  if (!reviews.length) {
-    return {
-      store_id: store.id,
-      store_name: store.store_name,
-      average_rating: 0,
-      total_reviews: 0,
-      total_products: totalProducts,
-    };
-  }
-
-  const totalRating = reviews.reduce(
-    (sum: number, r: any) => sum + r.rating,
-    0
-  );
-
-  const average =
-    totalRating / totalReviews;
-
-  return {
-    store_id: store.id,
-    store_name: store.store_name,
-    average_rating: Number(
-      average.toFixed(1)
-    ),
-    total_reviews: totalReviews,
-    total_products: totalProducts,
-  };
-}
 }
 
 export default StoreService;

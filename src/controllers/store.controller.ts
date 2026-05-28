@@ -3,15 +3,15 @@ import StoreService from "../services/store.service";
 import cloudinary from "../config/cloudinary";
 
 class StoreController {
-  constructor(private storeService: StoreService) {}
+  constructor(private storeService: StoreService) { }
 
-  // CREATE STORE
   createStore = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const parts = req.parts();
 
       let body: any = {};
       let logoUrl = "";
+      let bannerUrl = "";
 
       for await (const part of parts) {
         if (part.type === "file") {
@@ -22,31 +22,54 @@ class StoreController {
             { folder: "stores" }
           );
 
-          if (part.fieldname === "logo") {
+          // logo image
+          if (part.fieldname.trim().toLowerCase() === "logo") {
             logoUrl = result.secure_url;
           }
+
+          if (part.fieldname.trim().toLowerCase() === "banner") {
+            bannerUrl = result.secure_url;
+          }
+
         } else {
+
           body[part.fieldname] = part.value;
+
         }
       }
 
       const result = await this.storeService.createStore({
         ...body,
-        ...(logoUrl && { logo: logoUrl }), //  optional logo
+
+        ...(logoUrl && {
+          logo: logoUrl,
+        }),
+
+        ...(bannerUrl && {
+          banner: bannerUrl,
+        }),
+
         user_id: (req as any).user.id,
       });
 
       return reply.status(201).send({
         success: true,
-        message: "Store created successfully ",
+        message: "Store created successfully",
         data: result.store,
-        token: result.token,
+
+        // send token only when generated
+        ...(result.token && {
+          token: result.token,
+        }),
       });
+
     } catch (err: any) {
-      return reply.status(500).send({
+
+      return reply.status(err.statusCode || 500).send({
         success: false,
-        message: err.message,
+        message: err.message || "Internal Server Error",
       });
+
     }
   };
 
@@ -92,11 +115,10 @@ class StoreController {
   updateStore = async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       const { id } = req.params as any;
-
       const parts = req.parts();
-
       let body: any = {};
       let logoUrl = "";
+      let bannerUrl = "";
 
       for await (const part of parts) {
         if (part.type === "file") {
@@ -107,18 +129,35 @@ class StoreController {
             { folder: "stores" }
           );
 
+          // logo upload
           if (part.fieldname === "logo") {
             logoUrl = result.secure_url;
           }
+
+          // banner upload
+          if (part.fieldname === "banner") {
+            bannerUrl = result.secure_url;
+          }
+
         } else {
+
           body[part.fieldname] = part.value;
+
         }
       }
 
-      const updated = await this.storeService.updateStore(id, {
-        ...body,
-        ...(logoUrl && { logo: logoUrl }),
-      });
+      const updated =
+        await this.storeService.updateStore(id, {
+          ...body,
+
+          ...(logoUrl && {
+            logo: logoUrl,
+          }),
+
+          ...(bannerUrl && {
+            banner: bannerUrl,
+          }),
+        });
 
       return reply.send({
         success: true,
@@ -126,6 +165,7 @@ class StoreController {
         data: updated,
       });
     } catch (err: any) {
+
       return reply.status(err.statusCode || 500).send({
         success: false,
         message: err.message,
@@ -158,7 +198,7 @@ class StoreController {
 
       const stores = await this.storeService.getStoreByUserId(userId);
 
-     
+
       if (!stores || stores.length === 0) {
         return reply.status(404).send({
           success: false,
@@ -183,34 +223,31 @@ class StoreController {
     }
   };
 
-  getStoreAverageRating = async (
-  req: any,
-  reply: FastifyReply
-) => {
-  try {
+  getStoreAverageRating = async (req: any, reply: FastifyReply) => {
+    try {
 
-    const { storeId } = req.params;
+      const { storeId } = req.params;
 
-    const result =
-      await this.storeService.getStoreAverageRating(storeId);
+      const result =
+        await this.storeService.getStoreAverageRating(storeId);
 
-    return reply.send({
-      success: true,
-      message: "Store average rating fetched successfully",
-      data: result,
-    });
+      return reply.send({
+        success: true,
+        message: "Store average rating fetched successfully",
+        data: result,
+      });
 
-  } catch (error: any) {
+    } catch (error: any) {
 
-    return reply.status(error.statusCode || 500).send({
-      success: false,
-      message:
-        error.message ||
-        "Failed to fetch average rating",
-    });
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message:
+          error.message ||
+          "Failed to fetch average rating",
+      });
 
-  }
-};
+    }
+  };
 }
 
 export default StoreController;

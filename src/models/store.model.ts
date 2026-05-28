@@ -11,6 +11,7 @@ class Store extends Model {
   public address!: string;
   public gst_no!: string;
   public delivery_type!: string;
+  public banner!: string;
   public created_at!: Date;
   public updated_at!: Date;
 }
@@ -48,7 +49,10 @@ Store.init(
       type: DataTypes.STRING,
       allowNull: true,
     },
-
+    banner: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     owner_name: {
       type: DataTypes.STRING,
       allowNull: false,
